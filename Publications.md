@@ -1,0 +1,3 @@
+Maurer, J., Dutta, R., Vernon, A., & Vajedian, S. (2022). Complex Rupture and Triggered Aseismic Creep During the 14 August 2021 Haiti Earthquake From Satellite Geodesy. _Geophysical Research Letters_, 49(11), e2022GL098573. https://doi.org/https://doi.org/10.1029/2022GL098573.
+Maurer, J., Dunham, E. M., & Segall, P. (2020). Role of Fluid Injection on Earthquake Size in Dynamic Rupture Simulations on Rough Faults. _Geophysical Research Letters_, 47(13), e2020GL088377. https://doi.org/https://doi.org/10.1029/2020GL088377.
+Maurer, J., Kane, D., Nyst, M., & Velasquez, J. (2020). Risk from oklahoma’s induced earthquakes: The cost of declustering. _Bulletin of the Seismological Society of America_, 110(5). https://doi.org/10.1785/0120190268.
