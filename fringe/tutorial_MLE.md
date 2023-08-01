@@ -35,7 +35,7 @@ echo 'job finished'
 <aside>
 💡 [tops2vrt.py] -B lon/lat > failed, used -b x/y to replace it
 
-But if we use -b to specify the region, we should adjust the geometry manually.
+But if we use `-b` to specify the region, we should adjust the geometry manually.
 
 </aside>
 
@@ -75,7 +75,7 @@ echo 'job finished'
 
 # Step 3. Fringe3.bsub
 
-Back to the upper folder: `cd ..` , using `make_fringe.py` to generate `fringerun3.bsub` file which will under fringe_MLE/PS_DS folder
+Back to the upper folder: `cd ..` , using `make_fringe.py` to generate `fringerun3.bsub` file which will under the fringe_MLE/PS_DS folder
 
 Goal: unwrapping the interferograms
 
@@ -84,7 +84,7 @@ python make_fringe.py -sf /mnt/stor/geob/jlmd9g/YiChieh/Haiti/SenDT69/stack_Oct2
 ```
 
 
-# Step 4. generate mintpy folder
+# Step 4. Generate mintpy folder
 
 prep_fringe_downloaded.py
 
@@ -96,82 +96,83 @@ python prep_fringe_downsampled.py  -u './PS_DS/unwrap/*.unw' -c ./PS_DS/tcorr_ds
 
 # Step 5. run the step of mintpy
 
+
+
 ---
 
 # Making Geometry
 
-When using -b option, you should make some changes before **step3**
+1. If we use `-b` to specify the region, we should manually adjust the geometry before **step3**. Take `-r 9 -a 3` as an example. 
 
-Take -r 9 -a 3 as an example. 
+After **step 1**, the geometry folder should have three files (`hgt.vrt`, `lat.vrt`, `lon.vrt`). 
 
-1. gdal_translate -of ENVI hgt.vrt hgt.rdr
+Copy the format and create `shadowMask.vrt`, `incLocal.vrt`, and `los.vrt` manually. Here is an example.
+
     - original file 3 (files): hgt.vrt, lat.vrt, lon.vrt
     - **create shadowMask, incLocal, los.vrt manually**
         
-        ```bash
-        #shadowMask.vrt File
-        <VRTDataset rasterXSize="11750" rasterYSize="27450"> 
-            <VRTRasterBand dataType="Float64" band="1">
-              <SimpleSource>
-                <SourceFilename>/mnt/stor/geob/jlmd9g/YiChieh/Haiti/SenDT69/stack_Oct27/merged/geom_reference/shadowMask.rdr.full.vrt</SourceFilename>
-                <SourceBand>1</SourceBand>
-                <SourceProperties RasterXSize="67584" RasterYSize="27454" DataType="Float64"/>
-                <SrcRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
-                <DstRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
-              </SimpleSource>
-            </VRTRasterBand>
-        </VRTDataset>
+```bash
+#shadowMask.vrt File
+<VRTDataset rasterXSize="11750" rasterYSize="27450"> 
+    <VRTRasterBand dataType="Float64" band="1">
+      <SimpleSource>
+        <SourceFilename>/mnt/stor/geob/jlmd9g/YiChieh/Haiti/SenDT69/stack_Oct27/merged/geom_reference/shadowMask.rdr.full.vrt</SourceFilename>
+        <SourceBand>1</SourceBand>
+        <SourceProperties RasterXSize="67584" RasterYSize="27454" DataType="Float64"/>
+        <SrcRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
+        <DstRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
+      </SimpleSource>
+    </VRTRasterBand>
+</VRTDataset>
+```
+
+```bash
+#incLocal.vrt File
+<VRTDataset rasterXSize="11750" rasterYSize="27450">
+    <VRTRasterBand dataType="Float64" band="1">
+      <SimpleSource>
+        <SourceFilename>/mnt/stor/geob/jlmd9g/YiChieh/Haiti/SenDT69/stack_Oct27/merged/geom_reference/incLocal.rdr.full.vrt</SourceFilename>
+        <SourceBand>1</SourceBand>
+        <SourceProperties RasterXSize="67584" RasterYSize="27454" DataType="Float64"/>
+        <SrcRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
+        <DstRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
+      </SimpleSource>
+    </VRTRasterBand>
+</VRTDataset>
+```
         
-        ```
-        
-        ```bash
-        #incLocal.vrt File
-        <VRTDataset rasterXSize="11750" rasterYSize="27450">
-            <VRTRasterBand dataType="Float64" band="1">
-              <SimpleSource>
-                <SourceFilename>/mnt/stor/geob/jlmd9g/YiChieh/Haiti/SenDT69/stack_Oct27/merged/geom_reference/incLocal.rdr.full.vrt</SourceFilename>
-                <SourceBand>1</SourceBand>
-                <SourceProperties RasterXSize="67584" RasterYSize="27454" DataType="Float64"/>
-                <SrcRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
-                <DstRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
-              </SimpleSource>
-            </VRTRasterBand>
-        </VRTDataset>
-        ```
-        
-        ```bash
-        #los.vrt file
-        #los has 2 bands, the incidenceAngle and azimuthAngle
-        <VRTDataset rasterXSize="11750" rasterYSize="27450">
-            <VRTRasterBand dataType="Float64" band="1">
-              <SimpleSource>
-                <SourceFilename>/mnt/stor/geob/jlmd9g/YiChieh/Haiti/SenDT69/stack_Oct27/merged/geom_reference/los.rdr.full.vrt</SourceFilename>
-                <SourceBand>1</SourceBand>
-                <SourceProperties RasterXSize="67584" RasterYSize="27454" DataType="Float64"/>
-                <SrcRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
-                <DstRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
-              </SimpleSource>
-            </VRTRasterBand>
-            <VRTRasterBand dataType="Float64" band="2">
-              <SimpleSource>
-                <SourceFilename>/mnt/stor/geob/jlmd9g/YiChieh/Haiti/SenDT69/stack_Oct27/merged/geom_reference/los.rdr.full.vrt</SourceFilename>
-                <SourceBand>2</SourceBand>
-                <SourceProperties RasterXSize="67584" RasterYSize="27454" DataType="Float64"/>
-                <SrcRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
-                <DstRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
-              </SimpleSource>
-            </VRTRasterBand>
-        </VRTDataset>
-        ```
-        
-    - goal: genertate *.rdr *.hdr file (Total should be 18 files)
-2. gdal2isce_xml.py -i hgt.rdr
-    - generate *.rdr.vrt *.rdr.xml (Total should be 30 files)
-3. multilook.py hgt.rdr -r 9 -a 3 -o hgt_rlks9_alks3.rdr
-    - generate *_rlks9_alks3.rdr, *_rlks9_alks3.rdr.rsc, *_rlks9_alks3.rdr.vrt, *_rlks9_alks3.rdr.xml (Total should be 54 files)
-4. mkdir multi_rlks9_alks3
-5. mv *rlks9_alks3* multi_rlks9_alks3/. (Total should be 24 files in multi/ folder)
-6. cd multi & create hgt.vrt, the content just copy from the original *.vrt, but change the SourceFilename to hgt_rlks9_alks3.rdr  (do the same things to other 5 files) (Total should be 30 files)
+```bash
+#los.vrt file
+#los has 2 bands, the incidenceAngle and azimuthAngle
+<VRTDataset rasterXSize="11750" rasterYSize="27450">
+    <VRTRasterBand dataType="Float64" band="1">
+      <SimpleSource>
+        <SourceFilename>/mnt/stor/geob/jlmd9g/YiChieh/Haiti/SenDT69/stack_Oct27/merged/geom_reference/los.rdr.full.vrt</SourceFilename>
+        <SourceBand>1</SourceBand>
+        <SourceProperties RasterXSize="67584" RasterYSize="27454" DataType="Float64"/>
+        <SrcRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
+        <DstRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
+      </SimpleSource>
+    </VRTRasterBand>
+    <VRTRasterBand dataType="Float64" band="2">
+      <SimpleSource>
+        <SourceFilename>/mnt/stor/geob/jlmd9g/YiChieh/Haiti/SenDT69/stack_Oct27/merged/geom_reference/los.rdr.full.vrt</SourceFilename>
+        <SourceBand>2</SourceBand>
+        <SourceProperties RasterXSize="67584" RasterYSize="27454" DataType="Float64"/>
+        <SrcRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
+        <DstRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
+      </SimpleSource>
+    </VRTRasterBand>
+</VRTDataset>
+```
+
+2. 
+```python
+python make_geometry.py -r 9 -a 3
+```
+After running `make_geometry.py`, there should be 30 files in the geometry folder and 24 files in the multi_rlks*_alks* folder.
+
+3. cd multi & create `hgt.vrt`, the content copy from the original `*.vrt`, but change the SourceFilename to `hgt_rlks9_alks3.rdr`  (do the same things to other five files) (Total should be 30 files)
 
 ```bash
 #Check the size of incLocal_rlks9_alks3.rdr and change line1, 6, 7, and 8. 
