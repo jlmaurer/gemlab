@@ -1,0 +1,37 @@
+#!/bin/bash
+#SBATCH --job-name=geometry
+#SBATCH --ntasks=1
+#SBATCH --time=1-02:00:00
+#SBATCH --mail-type=begin,end,fail,requeue
+#SBATCH --mail-user=user@mst.edu
+#SBATCH --export=all
+#SBATCH --out=Foundry-%j.out
+#SBATCH --mem-per-cpu=10000
+#SBATCH -p general
+
+conda activate isce2
+
+gdal_translate -of ENVI hgt.vrt hgt.rdr
+gdal_translate -of ENVI lon.vrt lon.rdr
+gdal_translate -of ENVI los.vrt los.rdr
+gdal_translate -of ENVI lat.vrt lat.rdr
+gdal_translate -of ENVI shadowMask.vrt shadowMask.rdr
+gdal_translate -of ENVI incLocal.vrt incLocal.rdr
+
+gdal2isce_xml.py -i hgt.rdr
+gdal2isce_xml.py -i lon.rdr
+gdal2isce_xml.py -i lat.rdr
+gdal2isce_xml.py -i los.rdr
+gdal2isce_xml.py -i shadowMask.rdr
+gdal2isce_xml.py -i incLocal.rdr
+
+multilook.py hgt.rdr -r 9 -a 3 -o hgt_rlks9_alks3.rdr
+multilook.py lon.rdr -r 9 -a 3 -o lon_rlks9_alks3.rdr
+multilook.py lat.rdr -r 9 -a 3 -o lat_rlks9_alks3.rdr
+multilook.py los.rdr -r 9 -a 3 -o los_rlks9_alks3.rdr
+multilook.py shadowMask.rdr -r 9 -a 3 -o shadowMask_rlks9_alks3.rdr
+multilook.py incLocal.rdr -r 9 -a 3 -o incLocal_rlks9_alks3.rdr
+
+
+mkdir multi_rlks9_alks3
+mv *rlks9_alks3* multi_rlks9_alks3/. 
