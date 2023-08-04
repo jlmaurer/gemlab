@@ -6,6 +6,7 @@
 * combine_SLCs.py
 * prep_fringe_downsampled.py
 * make_geometry.py
+* findRP.py
 ```
 
 Create a fringe folder and activate the **ISCE2** environment first. 
@@ -107,7 +108,7 @@ python prep_fringe_downsampled.py  -u './PS_DS/unwrap/*.unw' -c ./PS_DS/tcorr_ds
 
 After finishing step 4, we will get the `timeseries.h5`, `temporalCoherence.h5`, `maskPS.h5`, `inputs/ifgramStack.h5`, and `inputs/geometryRadar.h5`.
 
-Choose the reference point and decide the correction that you want to do in mintpy.
+Choose the reference point (`findRP.py`) and decide the correction you want in mintpy.
 
 ```bash
 reference_point.py timeseries.h5 -y 7069 -x 2552
