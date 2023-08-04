@@ -105,7 +105,7 @@ python prep_fringe_downsampled.py  -u './PS_DS/unwrap/*.unw' -c ./PS_DS/tcorr_ds
 
 ## Step 5. Step of mintpy
 
-After finishing step 4, we will get the `timeseries.h5`, `temporalCoherence.h5`, and `inputs/geometryRadar.h5`.
+After finishing step 4, we will get the `timeseries.h5`, `temporalCoherence.h5`, `maskPS.h5`, `inputs/ifgramStack.h5`, and `inputs/geometryRadar.h5`.
 
 Choose the reference point and decide the correction that you want to do in mintpy.
 
