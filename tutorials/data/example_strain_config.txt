@@ -1,5 +1,5 @@
 [general]
-method = delaunay
+method = gpsgridder
 output_dir = Output
 input_vel_file = ./data/Guatemala_gnss_ITRF08_Strain2DFormat.txt
 write_metrics = 1
