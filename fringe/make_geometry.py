@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on TUE Aug 01 2023
+Last modified: Sep 21, 2023
 
 @ Author:: Yi-Chieh Lee
 """
@@ -29,14 +30,21 @@ os.system('gdal2isce_xml.py -i los.rdr')
 os.system('gdal2isce_xml.py -i shadowMask.rdr')
 os.system('gdal2isce_xml.py -i incLocal.rdr')
     
-output_name = '_rlks' + args.rangelooks + '_alks' + args.azimuthlooks + '.rdr'
+output_name = '_rlks' + str(args.rangelooks) + '_alks' + str(args.azimuthlooks) + '.rdr'
 
-os.system("multilook.py hgt.rdr -r rangelooks -a azimuthlooks -o 'hgt' + output_name")
-os.system("multilook.py lon.rdr -r rangelooks -a azimuthlooks -o 'lon' + output_name")
-os.system("multilook.py lat.rdr -r rangelooks -a azimuthlooks -o 'lat' + output_name")
-os.system("multilook.py los.rdr -r rangelooks -a azimuthlooks -o 'los' + output_name")
-os.system("multilook.py shadowMask.rdr -r rangelooks -a azimuthlooks -o 'shadowMask' + output_name")
-os.system("multilook.py incLocal.rdr -r rangelooks -a azimuthlooks -o 'incLocal' + output_name")
+awk1 = 'multilook.py hgt.rdr -r ' + str(rangelooks) + ' -a ' + str(azimuthlooks) + ' -o hgt' + output_name
+awk2 = 'multilook.py lon.rdr -r ' + str(rangelooks) + ' -a ' + str(azimuthlooks) + ' -o lon' + output_name
+awk3 = 'multilook.py lat.rdr -r ' + str(rangelooks) + ' -a ' + str(azimuthlooks) + ' -o lat' + output_name
+awk4 = 'multilook.py los.rdr -r ' + str(rangelooks) + ' -a ' + str(azimuthlooks) + ' -o los' + output_name
+awk5 = 'multilook.py shadowMask.rdr -r ' + str(rangelooks) + ' -a ' + str(azimuthlooks) + ' -o shadowMask' + output_name
+awk6 = 'multilook.py incLocal.rdr -r ' + str(rangelooks) + ' -a ' + str(azimuthlooks) + ' -o incLocal' + output_name
+
+os.system(awk1)
+os.system(awk2)
+os.system(awk3)
+os.system(awk4)
+os.system(awk5)
+os.system(awk6)
     
 folder_name = 'multi_rlks' + args.rangelooks + '_alks' + args.azimuthlooks
     
