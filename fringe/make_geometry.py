@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on TUE Aug 01 2023
-Last modified: Sep 21, 2023
+Last modified: Sep 24, 2023
 
 @ Author:: Yi-Chieh Lee
 """
@@ -11,8 +11,8 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser(description='create geometry')
-parser.add_argument('-r', '--rangelooks', type=int, metavar='', required=True, help='multilook factor for SAR range direction')
-parser.add_argument('-a', '--azimuthlooks', type=int, metavar='', required=True, help='multilook factor for SAR azimuth direction')
+parser.add_argument('-r', '--rangelooks', type=str, metavar='', required=True, help='multilook factor for SAR range direction')
+parser.add_argument('-a', '--azimuthlooks', type=str, metavar='', required=True, help='multilook factor for SAR azimuth direction')
 args = parser.parse_args()
 
 
@@ -30,14 +30,14 @@ os.system('gdal2isce_xml.py -i los.rdr')
 os.system('gdal2isce_xml.py -i shadowMask.rdr')
 os.system('gdal2isce_xml.py -i incLocal.rdr')
     
-output_name = '_rlks' + str(args.rangelooks) + '_alks' + str(args.azimuthlooks) + '.rdr'
+output_name = '_rlks' + args.rangelooks + '_alks' + args.azimuthlooks + '.rdr'
 
-awk1 = 'multilook.py hgt.rdr -r ' + str(rangelooks) + ' -a ' + str(azimuthlooks) + ' -o hgt' + output_name
-awk2 = 'multilook.py lon.rdr -r ' + str(rangelooks) + ' -a ' + str(azimuthlooks) + ' -o lon' + output_name
-awk3 = 'multilook.py lat.rdr -r ' + str(rangelooks) + ' -a ' + str(azimuthlooks) + ' -o lat' + output_name
-awk4 = 'multilook.py los.rdr -r ' + str(rangelooks) + ' -a ' + str(azimuthlooks) + ' -o los' + output_name
-awk5 = 'multilook.py shadowMask.rdr -r ' + str(rangelooks) + ' -a ' + str(azimuthlooks) + ' -o shadowMask' + output_name
-awk6 = 'multilook.py incLocal.rdr -r ' + str(rangelooks) + ' -a ' + str(azimuthlooks) + ' -o incLocal' + output_name
+awk1 = 'multilook.py hgt.rdr -r ' + rangelooks + ' -a ' + azimuthlooks + ' -o hgt' + output_name
+awk2 = 'multilook.py lon.rdr -r ' + rangelooks + ' -a ' + azimuthlooks + ' -o lon' + output_name
+awk3 = 'multilook.py lat.rdr -r ' + rangelooks + ' -a ' + azimuthlooks + ' -o lat' + output_name
+awk4 = 'multilook.py los.rdr -r ' + rangelooks + ' -a ' + azimuthlooks + ' -o los' + output_name
+awk5 = 'multilook.py shadowMask.rdr -r ' + rangelooks + ' -a ' + azimuthlooks + ' -o shadowMask' + output_name
+awk6 = 'multilook.py incLocal.rdr -r ' + rangelooks + ' -a ' + azimuthlooks + ' -o incLocal' + output_name
 
 os.system(awk1)
 os.system(awk2)
