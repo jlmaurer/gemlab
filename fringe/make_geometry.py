@@ -32,12 +32,12 @@ os.system('gdal2isce_xml.py -i incLocal.rdr')
     
 output_name = '_rlks' + args.rangelooks + '_alks' + args.azimuthlooks + '.rdr'
 
-awk1 = 'multilook.py hgt.rdr -r ' + rangelooks + ' -a ' + azimuthlooks + ' -o hgt' + output_name
-awk2 = 'multilook.py lon.rdr -r ' + rangelooks + ' -a ' + azimuthlooks + ' -o lon' + output_name
-awk3 = 'multilook.py lat.rdr -r ' + rangelooks + ' -a ' + azimuthlooks + ' -o lat' + output_name
-awk4 = 'multilook.py los.rdr -r ' + rangelooks + ' -a ' + azimuthlooks + ' -o los' + output_name
-awk5 = 'multilook.py shadowMask.rdr -r ' + rangelooks + ' -a ' + azimuthlooks + ' -o shadowMask' + output_name
-awk6 = 'multilook.py incLocal.rdr -r ' + rangelooks + ' -a ' + azimuthlooks + ' -o incLocal' + output_name
+awk1 = 'multilook.py hgt.rdr -r ' + args.rangelooks + ' -a ' + args.azimuthlooks + ' -o hgt' + output_name
+awk2 = 'multilook.py lon.rdr -r ' + args.rangelooks + ' -a ' + args.azimuthlooks + ' -o lon' + output_name
+awk3 = 'multilook.py lat.rdr -r ' + args.rangelooks + ' -a ' + args.azimuthlooks + ' -o lat' + output_name
+awk4 = 'multilook.py los.rdr -r ' + args.rangelooks + ' -a ' + args.azimuthlooks + ' -o los' + output_name
+awk5 = 'multilook.py shadowMask.rdr -r ' + args.rangelooks + ' -a ' + args.azimuthlooks + ' -o shadowMask' + output_name
+awk6 = 'multilook.py incLocal.rdr -r ' + args.rangelooks + ' -a ' + args.azimuthlooks + ' -o incLocal' + output_name
 
 os.system(awk1)
 os.system(awk2)
