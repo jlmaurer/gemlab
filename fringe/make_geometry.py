@@ -51,5 +51,5 @@ folder_name = 'multi_rlks' + args.rangelooks + '_alks' + args.azimuthlooks
 cmdline1 = "mkdir "+ folder_name 
 os.system(cmdline1)
     
-cmdline2 = "mv "+ '*rlks' + args.rangelooks + '_alks*' + args.azimuthlooks + ' ' + folder_name + '/.'
+cmdline2 = "mv "+ '*rlks' + args.rangelooks + '_alks' + args.azimuthlooks + '* ' + folder_name + '/.'
 os.system(cmdline2)
