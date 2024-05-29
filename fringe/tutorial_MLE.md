@@ -69,7 +69,7 @@ unwrapStack.py -s slcs -m Sequential/miniStacks/ -d Sequential/Datum_connection/
 
 ## Step 3. Unwrapping the interferograms
 
-Go to the PS_DS folder and run the commands below. Remember to change the value of rangelooks (rlks, -r) and azimuthlooks (alks, -a). 
+Go to the PS_DS folder and run the commands below. Remember to change the value of rangelooks (rlks, `-r`) and azimuthlooks (alks, `-a`). 
 
 Here we set rangelooks as 9 and azimuthlooks as 3 as an example.
 
