@@ -5,3 +5,5 @@
 *checkpoint*
 Output
 *pycache*
+*.h5
+*.tif

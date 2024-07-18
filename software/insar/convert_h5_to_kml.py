@@ -1,10 +1,13 @@
 import h5py
 import os
+import pyproj
+import rasterio
+
+import numpy as np
 
 from pyproj import CRS
 from rasterio import open,Affine
-from rasterio.warp import reproject, Resampling
-import pyproj
+from rasterio.warp import reproject, Resampling, calculate_default_transform
 
 
 DEFAULT_DICT = {
@@ -33,8 +36,8 @@ def read_h5(fname):
         ndv = f.attrs['NO_DATA_VALUE']
         xstep = f.attrs['X_STEP']
         ystep = f.attrs['Y_STEP']        
-        lat1 = float(f.attrs['LAT_REF1'])
-        lon1 = float(f.attrs['LON_REF4'])
+        xf = float(f.attrs['X_FIRST'])
+        yf = float(f.attrs['Y_FIRST'])
 
     profile = DEFAULT_DICT
     profile['nodata'] = float(ndv)
@@ -42,7 +45,7 @@ def read_h5(fname):
     profile['height'] = hgt
     profile['crs'] = CRS.from_user_input(crs)
     profile['dtype'] = vel[0,0].dtype
-    profile['transform'] = Affine(float(xstep), 0, lon1, 0, float(ystep), lat1) 
+    profile['transform'] = Affine(float(xstep), 0, xf, 0, float(ystep), yf) 
     
     return vel, profile
 
@@ -51,8 +54,7 @@ def write_gtiff(fname, outname=None):
     if outname is None:
         outname = os.path.splitext(fname)[0] + '.tif'
     vel, profile = read_h5(fname) 
-    ds = open(outname, "w")
-    ds.profile = profile
+    ds = open(outname, "w", **profile)
     ds.write(vel, 1)
     ds.close()
 
@@ -68,30 +70,37 @@ def reproject_geotiff(input_filename, output_filename, src_epsg, dst_epsg, resam
       dst_epsg: EPSG code of the destination coordinate system.
       resampling: Resampling method to use during reprojection (default: nearest).
   """
+
+  # Define source and destination CRS objects using pyproj
+  dst_crs_obj = pyproj.CRS.from_epsg(dst_epsg)
+
   # Open the source GeoTIFF
   with open(input_filename) as src:
     # Get source data, transform, and CRS
     data = src.read(1)
     src_transform = src.transform
-    src_crs = src.crs
+    transform, width, height = calculate_default_transform(
+        src.crs, dst_crs_obj, src.width, src.height, *src.bounds)
 
-  # Define source and destination CRS objects using pyproj
-  src_crs_obj = pyproj.CRS.from_epsg(src_epsg)
-  dst_crs_obj = pyproj.CRS.from_epsg(dst_epsg)
+    dst_profile = src.meta.copy()
+    dst_profile.update({
+        'crs': dst_crs_obj, 
+        'transform': transform, 
+        'width': width, 
+        'height': height
+    })
 
-  # Perform reprojection using rasterio.warp.reproject
-  destination_transform, destination_data = reproject(
-      data,
-      src_transform=src_transform,
-      src_crs=src_crs_obj,
-      dst_crs=dst_crs_obj,
-      resampling=resampling,
-  )
-
-  # Open the output GeoTIFF with updated information
-  with open(output_filename, "w", driver="GTiff", height=data.shape[0], width=data.shape[1],
-            count=1, dtype=data.dtype, transform=destination_transform, crs=dst_crs) as dst:
-    dst.write(destination_data, 1)
+    # Perform reprojection using rasterio.warp.reproject
+    with open(output_filename, "w", **dst_profile) as dst:
+        for i in range(1,src.count + 1):
+            reproject(
+                source = rasterio.band(src,i),
+                destination = rasterio.band(dst,i),
+                src_transform=src_transform,
+                src_crs=src.crs,
+                dst_crs=dst_crs_obj,
+                resampling=resampling,
+            )
 
 
 def single_band_to_rgb(input_filename, output_filename):
@@ -105,15 +114,14 @@ def single_band_to_rgb(input_filename, output_filename):
   # Open the single-band GeoTIFF
   with open(input_filename) as src:
     data = src.read(1)
-    transform = src.transform
-    crs = src.crs
+    profile = src.meta.copy()
 
   # Create a 3-band array by replicating the single band
-  rgb_data = np.stack([data, data, data], axis=-1)
+  rgb_data = np.stack([data, data, data], axis=0)
+  profile['count'] = 3
 
   # Write the replicated data as a 3-band GeoTIFF
-  with open(output_filename, "w", driver="GTiff", height=data.shape[0], width=data.shape[1],
-            count=3, dtype=data.dtype, transform=transform, crs=crs) as dst:
+  with open(output_filename, "w", **profile) as dst:
     dst.write(rgb_data)
 
 
