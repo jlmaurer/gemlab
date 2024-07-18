@@ -1,5 +1,7 @@
 *.yaml
+*.yml
 *.txt
 *Store
 *checkpoint*
 Output
+*pycache*
