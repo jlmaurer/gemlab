@@ -1,8 +1,11 @@
-import numpy as np
-import gdal
-import glob
 import datetime
+import glob
 import h5py
+
+import numpy as np
+
+from osgeo import gdal
+
 
 def main(ifgList,refCenter=None,refSize=None):
     '''
