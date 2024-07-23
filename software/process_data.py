@@ -1,26 +1,29 @@
 import rasterio
-from rasterio.warp import reproject, Resampling
 import os
 import glob
 import shutil
+
 import numpy as np
 
+from pathlib import Path
+from rasterio.warp import reproject, Resampling
 
 
 def run_resampling(data_dir='DATA'):
     '''Resamples a set of raster to ahve the same bounds'''
-    amp_files = glob.glob(data_dir + os.sep + '*' + os.sep + '*amp.tif')
-    unw_files = glob.glob(data_dir + os.sep + '*' + os.sep + '*unw_phase.tif')
-    ph_files = glob.glob(data_dir + os.sep + '*' + os.sep + '*wrapped_phase.tif')
-    cor_files = glob.glob(data_dir + os.sep + '*' + os.sep + '*corr.tif')
-    dem_files = glob.glob(data_dir + os.sep + '*' + os.sep + '*dem.tif')
-    lv_theta_files = glob.glob(data_dir + os.sep + '*' + os.sep + '*lv_theta.tif')
-    lv_phi_files = glob.glob(data_dir + os.sep + '*' + os.sep + '*lv_phi.tif')
-    inc_files = glob.glob(data_dir + os.sep + '*' + os.sep + '*inc_map.tif')
-    inc_ell_files = glob.glob(data_dir + os.sep + '*' + os.sep + '*inc_map_ell.tif')
-    mask_files = glob.glob(data_dir + os.sep + '*' + os.sep + '*water_mask.tif')
-    vert_disp_files = glob.glob(data_dir + os.sep + '*' + os.sep + '*vert_disp.tif')
-    los_disp_files = glob.glob(data_dir + os.sep + '*' + os.sep + '*los_disp.tif')
+    glob_path = Path(os.getcwd())
+    amp_files =[str(pp) for pp in glob_path.glob('**/*amp.tif')]
+    unw_files =[str(pp) for pp in glob.glob('**/*unw_phase.tif')]
+    ph_files = [str(pp) for pp in glob.glob('**/*wrapped_phase.tif')]
+    cor_files = [str(pp) for pp in glob.glob('**/*corr.tif')]
+    dem_files = [str(pp) for pp in glob.glob('**/*dem.tif')]
+    lv_theta_files = [str(pp) for pp in glob.glob('**/*lv_theta.tif')]
+    lv_phi_files = [str(pp) for pp in glob.glob('**/*lv_phi.tif')]
+    inc_files = [str(pp) for pp in glob.glob('**/*inc_map.tif')]
+    inc_ell_files = [str(pp) for pp in glob.glob('**/*inc_map_ell.tif')]
+    mask_files = [str(pp) for pp in glob.glob('**/*water_mask.tif')]
+    vert_disp_files = [str(pp) for pp in glob.glob('**/*vert_disp.tif')]
+    los_disp_files = [str(pp) for pp in glob.glob('**/*los_disp.tif')]
 
     ref_file = 1
     with rasterio.open(unw_files[ref_file], 'r') as f:
