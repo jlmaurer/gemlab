@@ -6,7 +6,7 @@ import shutil
 import numpy as np
 
 from pathlib import Path
-from rasterio.warp import reproject, Resampling
+from rasterio.warp import reproject, Resampling,calculate_from_transform
 
 
 def run_resampling(data_dir='DATA'):
@@ -32,13 +32,14 @@ def run_resampling(data_dir='DATA'):
         ref_width = f.width
         ref_height = f.height
         ref_ndv = f.nodata
+        new_transform = f.transform
 
     kwupdate = {
         'crs': ref_crs,
         'bounds': ref_bounds,
         'width': ref_width,
         'height': ref_height,
-        'nodata': ref_ndv
+        'nodata': ref_ndv,
         }
 
     for k, f in enumerate(unw_files):
@@ -54,29 +55,35 @@ def run_resampling(data_dir='DATA'):
         vf = find_matching_file(vert_disp_files, f)
         lf = find_matching_file(los_disp_files, f)
 
-        update_file(af, kwupdate)
-        update_file(f, kwupdate)
-        update_file(ph, kwupdate)
-        update_file(cf, kwupdate)
-        update_file(df, kwupdate)
-        update_file(lvf, kwupdate)
-        update_file(lpf, kwupdate)
-        update_file(incf, kwupdate)
-        update_file(ief, kwupdate)
-        update_file(mf, kwupdate)
-        update_file(vf, kwupdate)
-        update_file(lf, kwupdate)
+        update_file(af, new_transform, kwupdate)
+        update_file(f,  new_transform, kwupdate)
+        update_file(ph, new_transform, kwupdate)
+        update_file(cf, new_transform, kwupdate)
+        update_file(df, new_transform, kwupdate)
+        update_file(lvf, new_transform, kwupdate)
+        update_file(lpf, new_transform, kwupdate)
+        update_file(incf,new_transform, kwupdate)
+        update_file(ief,new_transform, kwupdate)
+        update_file(mf, new_transform,kwupdate)
+        update_file(vf, new_transform,kwupdate)
+        update_file(lf, new_transform,kwupdate)
 
 
-
-def update_file(orig_file, kwupdate):
+def update_file(orig_file, new_transform, kwupdate):
     # See here: https://hatarilabs.com/ih-en/how-to-reproject-single-and-multiple-rasters-with-python-and-rasterio-tutorial
     if orig_file is None:
         return
 
     # first open the original file
-    srcRst = rasterio.open(orig_file)
-    options = srcRst.meta.copy()
+    src = rasterio.open(orig_file)
+    options = src.meta.copy()
+    resampled_transform = calculate_from_transform(
+        src.transform, 
+        new_transform, 
+        kwupdate['width'], 
+        kwupdate['height'],
+    )
+    kwupdate['transform'] = resampled_transform
     options.update(kwupdate)
 
     # Now create a temporary new file
@@ -84,18 +91,18 @@ def update_file(orig_file, kwupdate):
     dstRst = rasterio.open(tmp_file, 'w', **options)
 
     # write each band in the old file to the new file
-    for i in range(1, srcRst.count + 1):
+    for i in range(1, src.count + 1):
         reproject(
-            source=rasterio.band(srcRst, i),
+            source=rasterio.band(src, i),
             destination=rasterio.band(dstRst, i),
-            src_crs=srcRst.crs,
-            dst_crs=srcRst.crs,
+            src_crs=src.crs,
+            dst_crs=src.crs,
             resampling=Resampling.nearest,
         )
 
     # close both files
     dstRst.close()
-    srcRst.close()
+    src.close()
 
     # Copy the new file to the old file location
     os.replace('tmp.tif', orig_file)
