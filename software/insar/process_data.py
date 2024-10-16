@@ -36,13 +36,6 @@ def run_resampling(data_dir='DATA'):
         ref_ndv = f.nodata
         new_transform = f.transform
 
-    kwupdate = {
-        'crs': ref_crs,
-        'bounds': ref_bounds,
-        'width': ref_width,
-        'height': ref_height,
-        'nodata': ref_ndv,
-        }
 
     for k, f in enumerate(unw_files):
         af = find_matching_file(amp_files, f)
@@ -57,6 +50,14 @@ def run_resampling(data_dir='DATA'):
         vf = find_matching_file(vert_disp_files, f)
         lf = find_matching_file(los_disp_files, f)
 
+        kwupdate = {
+            'crs': ref_crs,
+            'bounds': ref_bounds,
+            'width': ref_width,
+            'height': ref_height,
+            'nodata': ref_ndv,
+            }
+
         update_file(af, new_transform, kwupdate)
         update_file(f,  new_transform, kwupdate)
         update_file(ph, new_transform, kwupdate)
@@ -69,6 +70,8 @@ def run_resampling(data_dir='DATA'):
         update_file(mf, new_transform,kwupdate)
         update_file(vf, new_transform,kwupdate)
         update_file(lf, new_transform,kwupdate)
+
+        del kwupdate
 
 
 def update_file(orig_file, new_bounds, kwupdate):
