@@ -1,12 +1,14 @@
 import rasterio
 import os
 import glob
+import math
 import shutil
 
 import numpy as np
 
 from pathlib import Path
 from rasterio.warp import reproject, Resampling,calculate_from_transform
+from rasterio import windows
 
 
 def run_resampling(data_dir='DATA'):
@@ -69,20 +71,16 @@ def run_resampling(data_dir='DATA'):
         update_file(lf, new_transform,kwupdate)
 
 
-def update_file(orig_file, new_transform, kwupdate):
+def update_file(orig_file, new_bounds, kwupdate):
     # See here: https://hatarilabs.com/ih-en/how-to-reproject-single-and-multiple-rasters-with-python-and-rasterio-tutorial
+    # and here: https://gis.stackexchange.com/questions/476382/how-to-change-the-extent-of-an-existing-tiff-given-shapefile-bounding-extent-usi
     if orig_file is None:
         return
 
     # first open the original file
     src = rasterio.open(orig_file)
     options = src.meta.copy()
-    resampled_transform = calculate_from_transform(
-        src.transform, 
-        new_transform, 
-        kwupdate['width'], 
-        kwupdate['height'],
-    )
+    data, resampled_transform = expand_extent(src, kwupdate['bounds'], src.nodata)
     kwupdate['transform'] = resampled_transform
     options.update(kwupdate)
 
@@ -96,7 +94,7 @@ def update_file(orig_file, new_transform, kwupdate):
             source=rasterio.band(src, i),
             destination=rasterio.band(dstRst, i),
             src_crs=src.crs,
-            dst_crs=src.crs,
+            dst_crs=dstRst.crs,
             resampling=Resampling.nearest,
         )
 
@@ -133,6 +131,27 @@ def plot_extents(data_dir):
 
     plt.savefig('Network_extents.png')
     plt.close('all')
+
+
+def snap(window):
+    """ Handle rasterio's floating point precision (sub pixel) windows """
+    # Adding the offset differences to the dimensions will handle case where width/heights can 1 pixel too small
+    # after the offsets are shifted. 
+    # This ensures pixel contains the bounds that were originally passed to windows.from_bounds()
+    col_off, row_off = math.floor(window.col_off), math.floor(window.row_off)
+    col_diff, row_diff = window.col_off - col_off, window.row_off - row_off
+    width, height = math.ceil(window.width + col_diff), math.ceil(window.height + row_diff)
+
+    return windows.Window(
+        col_off=col_off, row_off=row_off, width=width, height=height
+    )
+
+
+def expand_extent(raster, extent, fill_value=None):
+    window = snap(windows.from_bounds(*extent, raster.transform))
+    data = raster.read(window=window, boundless=True, fill_value=fill_value)
+    return data, windows.transform(window, raster.transform)
+
 
 
 if __name__=='__main__':
