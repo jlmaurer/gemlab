@@ -54,8 +54,6 @@ def run_resampling(data_dir='DATA'):
         update_file(vf, unw_files[ref_file])
         update_file(lf, unw_files[ref_file])
 
-        del kwupdate
-
 
 def update_file(orig_file, ref_file):
     if orig_file is None:
