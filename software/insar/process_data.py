@@ -1,13 +1,16 @@
+import rasterio
+import os
 import glob
 import math
-import os
-import rasterio
 import shutil
 
 import numpy as np
-import rioxarray as rio
 
 from pathlib import Path
+from rasterio import windows
+from rasterio.mask import mask
+
+import rioxarray as rio
 
 
 def run_resampling(data_dir='DATA'):
@@ -53,6 +56,8 @@ def run_resampling(data_dir='DATA'):
         update_file(mf, unw_files[ref_file])
         update_file(vf, unw_files[ref_file])
         update_file(lf, unw_files[ref_file])
+
+        del kwupdate
 
 
 def update_file(orig_file, ref_file):
