@@ -1,16 +1,14 @@
-import rasterio
-import os
 import glob
 import math
+import os
+import rasterio
 import shutil
+from tqdm import tqdm
 
 import numpy as np
+import rioxarray as rio
 
 from pathlib import Path
-from rasterio import windows
-from rasterio.mask import mask
-
-import rioxarray as rio
 
 
 def run_resampling(data_dir='DATA'):
@@ -31,7 +29,7 @@ def run_resampling(data_dir='DATA'):
 
     ref_file = 1
 
-    for k, f in enumerate(unw_files):
+    for k, f in tqdm(enumerate(unw_files), total=len(unw_files)):
         af = find_matching_file(amp_files, f)
         ph = find_matching_file(ph_files, f)
         cf = find_matching_file(cor_files, f)
@@ -57,8 +55,6 @@ def run_resampling(data_dir='DATA'):
         update_file(vf, unw_files[ref_file])
         update_file(lf, unw_files[ref_file])
 
-        del kwupdate
-
 
 def update_file(orig_file, ref_file):
     if orig_file is None:
@@ -66,7 +62,11 @@ def update_file(orig_file, ref_file):
 
     src = rio.open_rasterio(orig_file)
     ref = rio.open_rasterio(ref_file)
-    src.rio.reproject_match(ref)
+    ds_out = src.interp_like(ref)
+    del src
+    del ref
+    #src.rio.reproject_match(ref)
+    ds_out.rio.to_raster(orig_file)
 
 
 def find_matching_file(flist, f):
