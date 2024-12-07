@@ -27,23 +27,23 @@ def run_resampling(data_dir='DATA'):
     vert_disp_files = [str(pp) for pp in glob_path.glob('**/*vert_disp.tif')]
     los_disp_files = [str(pp) for pp in glob_path.glob('**/*los_disp.tif')]
 
-    ref_file = 1
+    ref_file = 0
 
-    for k, f in tqdm(enumerate(unw_files), total=len(unw_files)):
-        af = find_matching_file(amp_files, f)
-        ph = find_matching_file(ph_files, f)
-        cf = find_matching_file(cor_files, f)
-        df = find_matching_file(dem_files, f)
-        lvf = find_matching_file(lv_theta_files, f)
-        lpf= find_matching_file(lv_phi_files, f)
-        incf = find_matching_file(inc_files, f)
-        ief = find_matching_file(inc_ell_files, f)
-        mf = find_matching_file(mask_files, f)
-        vf = find_matching_file(vert_disp_files, f)
-        lf = find_matching_file(los_disp_files, f)
+    for k, uf in tqdm(enumerate(unw_files), total=len(unw_files)):
+        af = find_matching_file(amp_files, uf)
+        ph = find_matching_file(ph_files, uf)
+        cf = find_matching_file(cor_files, uf)
+        df = find_matching_file(dem_files, uf)
+        lvf = find_matching_file(lv_theta_files, uf)
+        lpf= find_matching_file(lv_phi_files, uf)
+        incf = find_matching_file(inc_files, uf)
+        ief = find_matching_file(inc_ell_files, uf)
+        mf = find_matching_file(mask_files, uf)
+        vf = find_matching_file(vert_disp_files, uf)
+        lf = find_matching_file(los_disp_files, uf)
 
         update_file(af, unw_files[ref_file])
-        update_file(f,  unw_files[ref_file])
+        update_file(uf,  unw_files[ref_file])
         update_file(ph, unw_files[ref_file])
         update_file(cf, unw_files[ref_file])
         update_file(df, unw_files[ref_file])
@@ -60,13 +60,12 @@ def update_file(orig_file, ref_file):
     if orig_file is None:
         return
 
-    src = rio.open_rasterio(orig_file)
-    ref = rio.open_rasterio(ref_file)
-    ds_out = src.interp_like(ref)
-    del src
-    del ref
-    #src.rio.reproject_match(ref)
-    ds_out.rio.to_raster(orig_file)
+    with rio.open_rasterio(ref_file) as ref:
+        src = rio.open_rasterio(orig_file)
+        if src.shape != ref.shape:
+            ds_out = src.interp_like(ref)
+            del src
+            ds_out.rio.to_raster(orig_file)
 
 
 def find_matching_file(flist, f):
@@ -74,7 +73,7 @@ def find_matching_file(flist, f):
     parts1 = os.path.basename(f).split('_')
     for f2 in flist:
         parts = os.path.basename(f2).split('_')
-        if (parts1[1] == parts[1]) & (parts1[2] == parts[2]):
+        if (parts1[1] == parts[1]) & (parts1[2] == parts[2]) & (parts1[7]==parts[7]):
             return f2
     return None
 
