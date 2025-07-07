@@ -5,13 +5,18 @@ Last modified: Sep 24, 2023
 
 @ Author:: Yi-Chieh Lee
 """
+
 import argparse
 import os
 
 
 parser = argparse.ArgumentParser(description='create geometry')
-parser.add_argument('-r', '--rangelooks', type=str, metavar='', required=True, help='multilook factor for SAR range direction')
-parser.add_argument('-a', '--azimuthlooks', type=str, metavar='', required=True, help='multilook factor for SAR azimuth direction')
+parser.add_argument(
+    '-r', '--rangelooks', type=str, metavar='', required=True, help='multilook factor for SAR range direction'
+)
+parser.add_argument(
+    '-a', '--azimuthlooks', type=str, metavar='', required=True, help='multilook factor for SAR azimuth direction'
+)
 args = parser.parse_args()
 
 
@@ -28,7 +33,7 @@ os.system('gdal2isce_xml.py -i lat.rdr')
 os.system('gdal2isce_xml.py -i los.rdr')
 os.system('gdal2isce_xml.py -i shadowMask.rdr')
 os.system('gdal2isce_xml.py -i incLocal.rdr')
-    
+
 output_name = '_rlks' + args.rangelooks + '_alks' + args.azimuthlooks + '.rdr'
 
 awk1 = 'multilook.py hgt.rdr -r ' + args.rangelooks + ' -a ' + args.azimuthlooks + ' -o hgt' + output_name
@@ -44,11 +49,11 @@ os.system(awk3)
 os.system(awk4)
 os.system(awk5)
 os.system(awk6)
-    
+
 folder_name = 'multi_rlks' + args.rangelooks + '_alks' + args.azimuthlooks
-    
-cmdline1 = "mkdir "+ folder_name 
+
+cmdline1 = 'mkdir ' + folder_name
 os.system(cmdline1)
-    
-cmdline2 = "mv "+ '*rlks' + args.rangelooks + '_alks' + args.azimuthlooks + '* ' + folder_name + '/.'
+
+cmdline2 = 'mv ' + '*rlks' + args.rangelooks + '_alks' + args.azimuthlooks + '* ' + folder_name + '/.'
 os.system(cmdline2)

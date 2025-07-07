@@ -4,12 +4,14 @@ Created on Fri Mar 11 16:07:12 2022
 @author: duttar
 """
 
-#import numpy as np
+# import numpy as np
 import argparse
 import os
 
 
-parser = argparse.ArgumentParser(description='goes to SLC folder in merged and creates .slc.full files from .slc.full.vrt files')
+parser = argparse.ArgumentParser(
+    description='goes to SLC folder in merged and creates .slc.full files from .slc.full.vrt files'
+)
 parser.add_argument('-p', '--path', type=str, metavar='', required=True, help='enter path to merged folder')
 
 args = parser.parse_args()
@@ -32,7 +34,7 @@ file = open(filename)
 Counter = 0
 # Reading from file
 Content = file.read()
-CoList = Content.split("\n")
+CoList = Content.split('\n')
 for i in CoList:
     if i:
         Counter += 1
@@ -45,11 +47,11 @@ count = 0
 # Strips the newline character
 for line in Lines:
     count += 1
-    print(f"Moving SLC {line.strip()}")
-    sys_comm3 = 'gdal_translate -of ENVI '+ line.strip() + '.slc.full.vrt ' + line.strip() + '.slc.full'
-    #print(sys_comm3)
+    print(f'Moving SLC {line.strip()}')
+    sys_comm3 = 'gdal_translate -of ENVI ' + line.strip() + '.slc.full.vrt ' + line.strip() + '.slc.full'
+    # print(sys_comm3)
     sys_comm4 = 'cd ' + SLC_dir + '/' + line.strip() + '/ && '
-    #print(sys_comm4)
+    # print(sys_comm4)
     sys_comm5 = sys_comm4 + sys_comm3
     print(sys_comm5)
     os.system(sys_comm5)

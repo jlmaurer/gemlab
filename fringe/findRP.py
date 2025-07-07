@@ -10,6 +10,6 @@ parser = argparse.ArgumentParser(description='find the reference point in tempor
 ds = gdal.Open('temporalCoherence.h5', gdal.GA_ReadOnly)
 data = ds.GetRasterBand(1).ReadAsArray()
 
-yx = random.choice(np.argwhere(data==data.max()))
+yx = random.choice(np.argwhere(data == data.max()))
 
 print('y:', yx[0], ', x:', yx[1])

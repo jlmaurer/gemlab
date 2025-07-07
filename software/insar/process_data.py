@@ -15,8 +15,8 @@ from tqdm import tqdm
 def run_resampling(path_to_shapefile, data_dir='DATA'):
     """Resamples a set of raster to ahve the same bounds"""
     glob_path = Path(os.getcwd())
-    amp_files =[str(pp) for pp in glob_path.glob('**/*amp.tif')]
-    unw_files =[str(pp) for pp in glob_path.glob('**/*unw_phase.tif')]
+    amp_files = [str(pp) for pp in glob_path.glob('**/*amp.tif')]
+    unw_files = [str(pp) for pp in glob_path.glob('**/*unw_phase.tif')]
     ph_files = [str(pp) for pp in glob_path.glob('**/*wrapped_phase.tif')]
     cor_files = [str(pp) for pp in glob_path.glob('**/*corr.tif')]
     dem_files = [str(pp) for pp in glob_path.glob('**/*dem.tif')]
@@ -37,17 +37,24 @@ def run_resampling(path_to_shapefile, data_dir='DATA'):
         xres = r_int.transform[0]
         yres = r_int.transform[4]
 
-    # get the transform 
+    # get the transform
     shp = gpd.read_file(path_to_shapefile)
     if shp.crs != crs:
         shp = shp.to_crs(crs)
     bounds = shp.total_bounds
-    
+
     # Create the transform and dimensions for the destination raster
-    dst_transform = rasterio.Affine(xres, 0.0, bounds[0], 0.0,yres, bounds[3])
+    dst_transform = rasterio.Affine(xres, 0.0, bounds[0], 0.0, yres, bounds[3])
     dst_width = int((bounds[2] - bounds[0]) / xres)
     dst_height = int((bounds[3] - bounds[1]) / -yres)
-    out_dict = {'transform': dst_transform, 'width': dst_width, 'height': dst_height, 'crs': crs, 'bounds': bounds, 'proj': shp}
+    out_dict = {
+        'transform': dst_transform,
+        'width': dst_width,
+        'height': dst_height,
+        'crs': crs,
+        'bounds': bounds,
+        'proj': shp,
+    }
 
     for k, uf in tqdm(enumerate(unw_files), total=len(unw_files)):
         af = find_matching_file(amp_files, uf)
@@ -55,7 +62,7 @@ def run_resampling(path_to_shapefile, data_dir='DATA'):
         cf = find_matching_file(cor_files, uf)
         df = find_matching_file(dem_files, uf)
         lvf = find_matching_file(lv_theta_files, uf)
-        lpf= find_matching_file(lv_phi_files, uf)
+        lpf = find_matching_file(lv_phi_files, uf)
         incf = find_matching_file(inc_files, uf)
         ief = find_matching_file(inc_ell_files, uf)
         mf = find_matching_file(mask_files, uf)
@@ -63,22 +70,21 @@ def run_resampling(path_to_shapefile, data_dir='DATA'):
         lf = find_matching_file(los_disp_files, uf)
 
         # loop through all interferograms and coherence rasters, clip to area of interest
-        transform_with_shapefile(af,   out_dict)
-        transform_with_shapefile(uf,   out_dict)
-        transform_with_shapefile(ph,   out_dict)
-        transform_with_shapefile(cf,   out_dict)
-        transform_with_shapefile(df,   out_dict)
-        transform_with_shapefile(lvf,  out_dict)
-        transform_with_shapefile(lpf,  out_dict)
+        transform_with_shapefile(af, out_dict)
+        transform_with_shapefile(uf, out_dict)
+        transform_with_shapefile(ph, out_dict)
+        transform_with_shapefile(cf, out_dict)
+        transform_with_shapefile(df, out_dict)
+        transform_with_shapefile(lvf, out_dict)
+        transform_with_shapefile(lpf, out_dict)
         transform_with_shapefile(incf, out_dict)
-        transform_with_shapefile(ief,  out_dict)
-        transform_with_shapefile(mf,   out_dict)
-        transform_with_shapefile(vf,   out_dict)
-        transform_with_shapefile(lf,   out_dict)
+        transform_with_shapefile(ief, out_dict)
+        transform_with_shapefile(mf, out_dict)
+        transform_with_shapefile(vf, out_dict)
+        transform_with_shapefile(lf, out_dict)
 
         if k % 10 == 0:
             print(f'Currently running file #{k} of {len(unw_files)}.')
-
 
 
 def update_file(orig_file, ref_file):
@@ -98,7 +104,7 @@ def find_matching_file(flist, f):
     parts1 = os.path.basename(f).split('_')
     for f2 in flist:
         parts = os.path.basename(f2).split('_')
-        if (parts1[1] == parts[1]) & (parts1[2] == parts[2]) & (parts1[7]==parts[7]):
+        if (parts1[1] == parts[1]) & (parts1[2] == parts[2]) & (parts1[7] == parts[7]):
             return f2
     return None
 
@@ -113,7 +119,7 @@ def plot_extents(data_dir):
     de = np.array(NS_bounds).mean(axis=0)
 
     for k, pair in enumerate(NS_bounds):
-        plt.plot([k,k], [pair[0]-de[0], pair[1]-de[1]], '-k')
+        plt.plot([k, k], [pair[0] - de[0], pair[1] - de[1]], '-k')
     plt.ylim([de[0] - 100, de[1] + 100])
 
     plt.savefig('Network_extents.png')
@@ -123,15 +129,13 @@ def plot_extents(data_dir):
 def snap(window):
     """Handle rasterio's floating point precision (sub pixel) windows"""
     # Adding the offset differences to the dimensions will handle case where width/heights can 1 pixel too small
-    # after the offsets are shifted. 
+    # after the offsets are shifted.
     # This ensures pixel contains the bounds that were originally passed to windows.from_bounds()
     col_off, row_off = math.floor(window.col_off), math.floor(window.row_off)
     col_diff, row_diff = window.col_off - col_off, window.row_off - row_off
     width, height = math.ceil(window.width + col_diff), math.ceil(window.height + row_diff)
 
-    return windows.Window(
-        col_off=col_off, row_off=row_off, width=width, height=height
-    )
+    return windows.Window(col_off=col_off, row_off=row_off, width=width, height=height)
 
 
 def expand_extent(raster, extent, fill_value=None):
@@ -140,33 +144,47 @@ def expand_extent(raster, extent, fill_value=None):
     return data, windows.transform(window, raster.transform)
 
 
-def saveraster_with_transform(data,fname,in_transform, transform,crs='',r_crs='',drivername='GTiff',epsg='',datatype='float32',bands=1, dst_height=None,dst_width=None, nodata=0.):
-
+def saveraster_with_transform(
+    data,
+    fname,
+    in_transform,
+    transform,
+    crs='',
+    r_crs='',
+    drivername='GTiff',
+    epsg='',
+    datatype='float32',
+    bands=1,
+    dst_height=None,
+    dst_width=None,
+    nodata=0.0,
+):
     # get default file size
     if dst_height is None:
-        dst_height,dst_width = data.shape
+        dst_height, dst_width = data.shape
 
     # data_new=np.reshape(data,(bands,data.shape[0],data.shape[1]))
-    if crs !='':
+    if crs != '':
         try:
             crs = rasterio.crs.CRS.from_proj4(crs)
         except TypeError:
             crs = crs
-    elif epsg !='':
-        crs=rasterio.crs.CRS.from_epsg(epsg)
+    elif epsg != '':
+        crs = rasterio.crs.CRS.from_epsg(epsg)
     else:
         crs = rasterio.crs.CRS.from_epsg('4326')
 
     with rasterio.open(
-            fname,'w',
-            driver=drivername,
-            height=dst_height,
-            width=dst_width,
-            count=bands,
-            dtype=datatype,
-            crs=crs,
-            transform=transform
-        ) as dst:
+        fname,
+        'w',
+        driver=drivername,
+        height=dst_height,
+        width=dst_width,
+        count=bands,
+        dtype=datatype,
+        crs=crs,
+        transform=transform,
+    ) as dst:
         reproject(
             source=data,
             destination=rasterio.band(dst, 1),
@@ -174,9 +192,9 @@ def saveraster_with_transform(data,fname,in_transform, transform,crs='',r_crs=''
             src_crs=crs,
             dst_transform=transform,
             dst_crs=r_crs,
-            resampling=Resampling.nearest, # Or other resampling method if needed
+            resampling=Resampling.nearest,  # Or other resampling method if needed
         )
-        #dst.write(np.array(data,datatype),bands)
+        # dst.write(np.array(data,datatype),bands)
 
 
 def transform_with_shapefile(raster, param_dict):
@@ -198,8 +216,8 @@ def transform_with_shapefile(raster, param_dict):
 
         # Create the new file
         saveraster_with_transform(
-            np.squeeze(int_mask), 
-            fname_stem+'_int.tif', 
+            np.squeeze(int_mask),
+            fname_stem + '_int.tif',
             in_transform,
             param_dict['transform'],
             crs=param_dict['crs'],
@@ -217,19 +235,19 @@ def tranform_all_files(shape_file, in_dir=os.getcwd(), out_dir=os.getcwd()):
     unwrapped_files = glob.glob(in_dir + os.sep + '*/*unw_phase.tif')
     coh_files = glob.glob(in_dir + os.sep + '*/*corr.tif')
 
-    # get the transform 
+    # get the transform
     shp = gpd.read_file(path_to_shapefile)
     with rasterio.open(unwrapped_files[0]) as r_int:
-        with rasterio.open(coh_files[0]) as r_coh: 
+        with rasterio.open(coh_files[0]) as r_coh:
             shp_proj = shp.to_crs(r_int.crs)
             epsg = r_int.crs.to_epsg()
 
     # loop through all interferograms and coherence rasters, clip to area of interest
     print('clipping files')
     for kk, file in enumerate(unwrapped_files):
-        print(str(kk)+' out of '+str(len(unwrapped_files)-1))
+        print(str(kk) + ' out of ' + str(len(unwrapped_files) - 1))
         transform_with_shapefile(file, coh_files[kk], shp_proj, epsg)
 
 
-if __name__=='__main__':
-    run_resampling(path_to_shapefile = 'my_shapefile.shp', data_dir='.')
+if __name__ == '__main__':
+    run_resampling(path_to_shapefile='my_shapefile.shp', data_dir='.')
