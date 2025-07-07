@@ -7,3 +7,4 @@ Output
 *pycache*
 *.h5
 *.tif
+.vscode/
