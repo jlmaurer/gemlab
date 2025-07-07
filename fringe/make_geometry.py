@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on TUE Aug 01 2023
 Last modified: Sep 24, 2023
 
 @ Author:: Yi-Chieh Lee
 """
-import sys
-import os
 import argparse
+import os
+
 
 parser = argparse.ArgumentParser(description='create geometry')
 parser.add_argument('-r', '--rangelooks', type=str, metavar='', required=True, help='multilook factor for SAR range direction')

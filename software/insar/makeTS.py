@@ -1,18 +1,18 @@
 import datetime
 import glob
-import h5py
 import os
-import rasterio
 import re
 
+import h5py
 import numpy as np
+import rasterio
 from osgeo import gdal
 
 
 def main(ifgList,refCenter=None,refSize=None):
-    '''
+    """
     Read in a list of interferograms and create a time-series and velocity map. 
-    '''
+    """
     datePairs, dates = getDates(ifgList)
     fracDates = np.array([dt2fracYear(d) for d in dates])
     G = makeG(dates, datePairs)
@@ -65,9 +65,9 @@ def dt2fracYear(date):
 
 
 def makeG(dates, pairs):
-    '''
+    """
     Create a time-series G-matrix. "dates" should be sorted ascending.
-    '''
+    """
     G = np.zeros((len(pairs), len(dates)))
     for k, (d1, d2) in enumerate(pairs):
         index1= dates == d1
@@ -78,16 +78,16 @@ def makeG(dates, pairs):
 
 
 def readRaster(filename, band_num = None):
-    '''
+    """
     Read a GDAL VRT file and return its attributes
-    '''
+    """
     try:
         ds = gdal.Open(filename, gdal.GA_ReadOnly)
         if ds is None:
-            raise RuntimeError('readRaster: cannot find file {}'.format(filename))
+            raise RuntimeError(f'readRaster: cannot find file {filename}')
     except Exception as e:
         print(e)
-        raise RuntimeError('readRaster: cannot find file {}'.format(filename))
+        raise RuntimeError(f'readRaster: cannot find file {filename}')
 
     xSize = ds.RasterXSize
     ySize = ds.RasterYSize
@@ -127,10 +127,10 @@ def dereference(array, taxis=0,refCenter = None, refSize = None):
     if refCenter is None:
         nshape = array.shape[1:]
         refCenter = [d//2 for d in nshape]
-        print('Reference region is centered on {}/{}'.format(refCenter[0],refCenter[1]))
+        print(f'Reference region is centered on {refCenter[0]}/{refCenter[1]}')
     if refSize is None:
         refSize = 10
-        print('Reference region is {} square pixels'.format(refSize**2))
+        print(f'Reference region is {refSize**2} square pixels')
 
     row1,row2,col1,col2=refCenter[0]-refSize//2,refCenter[0]+refSize//2,refCenter[1]-refSize//2,refCenter[1]+refSize//2
     for k in range(array.shape[taxis]):
@@ -165,9 +165,9 @@ def findMeanVel(array, t, taxis=0):
     
 
 def convertRad2meters(vel, lam=0.056):
-    '''
+    """
     Convert radians to mm
-    '''
+    """
     return vel/(4*np.pi/lam)
 
 
@@ -176,7 +176,7 @@ def writeTS2HDF5(array, dates, vel,filename='ts.h5'):
         f['ts'] = array
         f['dates'] = dates
         f['vel']=vel
-    print('Finished writing {} to disk'.format(filename))
+    print(f'Finished writing {filename} to disk')
 
 
 def readIFG(ifg, band_num=1, xstart=0, ystart=0, xStep=None,yStep=None):
@@ -190,9 +190,9 @@ def readIFG(ifg, band_num=1, xstart=0, ystart=0, xStep=None,yStep=None):
 
 
 def gdal_open(fname, returnProj=False, userNDV=None, band=None):
-    '''
+    """
     Reads a rasterio-compatible raster file and returns the data and profile
-    '''
+    """
     if rasterio is None:
         raise ImportError('RAiDER.utilFcns: rio_open - rasterio is not installed')
 

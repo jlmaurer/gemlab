@@ -1,11 +1,10 @@
-import numpy as np
 import matplotlib.pyplot as plt
-
+import numpy as np
 from scipy.stats import gaussian_kde
 
 
 def graph_correlations(corr_mat, names=None):
-    '''Correlation plot for an N x D array of D variables'''    
+    """Correlation plot for an N x D array of D variables"""    
     Nsamples, Nvars = corr_mat.shape
     if Nvars > 15:
         print('Too many variables, plot will not look good')

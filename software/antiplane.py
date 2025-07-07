@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def inter_rate(sdot, D, x):
     return (sdot/np.pi) * np.arctan2(x,D)
 

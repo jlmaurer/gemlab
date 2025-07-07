@@ -1,8 +1,9 @@
-import os 
-import numpy as np
-from osgeo import gdal
 import argparse
 import random
+
+import numpy as np
+from osgeo import gdal
+
 
 parser = argparse.ArgumentParser(description='find the reference point in temporalCoherence.h5')
 

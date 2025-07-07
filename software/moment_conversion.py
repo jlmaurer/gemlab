@@ -1,10 +1,11 @@
 import numpy as np
 
+
 def mw2mo(Mw):
     return 10**(1.5*(Mw + 6.03))
 
 def mo2area(Mo, dtau = 3):
-    '''dtau is in MPa'''
+    """Dtau is in MPa"""
     area = (Mo/(dtau*1e6))**(2/3)
     return area/1e6 # convert m^2 to km^2
 

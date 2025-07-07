@@ -1,22 +1,19 @@
 import glob
 import math
 import os
-import rasterio
-import shutil
-from tqdm import tqdm
+from pathlib import Path
 
 import geopandas as gpd
 import numpy as np
+import rasterio
 import rioxarray as rio
-
-from pathlib import Path
-from rasterio.mask import mask, raster_geometry_mask
-from rasterio.warp import calculate_default_transform, reproject, Resampling
-
+from rasterio.mask import mask
+from rasterio.warp import Resampling, reproject
+from tqdm import tqdm
 
 
 def run_resampling(path_to_shapefile, data_dir='DATA'):
-    '''Resamples a set of raster to ahve the same bounds'''
+    """Resamples a set of raster to ahve the same bounds"""
     glob_path = Path(os.getcwd())
     amp_files =[str(pp) for pp in glob_path.glob('**/*amp.tif')]
     unw_files =[str(pp) for pp in glob_path.glob('**/*unw_phase.tif')]
@@ -124,7 +121,7 @@ def plot_extents(data_dir):
 
 
 def snap(window):
-    """ Handle rasterio's floating point precision (sub pixel) windows """
+    """Handle rasterio's floating point precision (sub pixel) windows"""
     # Adding the offset differences to the dimensions will handle case where width/heights can 1 pixel too small
     # after the offsets are shifted. 
     # This ensures pixel contains the bounds that were originally passed to windows.from_bounds()
@@ -183,10 +180,9 @@ def saveraster_with_transform(data,fname,in_transform, transform,crs='',r_crs=''
 
 
 def transform_with_shapefile(raster, param_dict):
-    '''
+    """
     Function to transform a raster to match the bounds of a shapefile
-    '''
-
+    """
     # during first iteration of loop, reproject shapefile to same projection as interferograms
     try:
         fname_stem = os.path.splitext(raster)[0]

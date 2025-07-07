@@ -1,13 +1,12 @@
-import h5py
 import os
+
+import h5py
+import numpy as np
 import pyproj
 import rasterio
-
-import numpy as np
-
 from pyproj import CRS
-from rasterio import open,Affine
-from rasterio.warp import reproject, Resampling, calculate_default_transform
+from rasterio import Affine, open
+from rasterio.warp import Resampling, calculate_default_transform, reproject
 
 
 DEFAULT_DICT = {
@@ -50,7 +49,7 @@ def read_h5(fname):
     return vel, profile
 
 def write_gtiff(fname, outname=None):
-    '''Read an HDF5 velocity file and write the velocity out to a GeoTiff'''
+    """Read an HDF5 velocity file and write the velocity out to a GeoTiff"""
     if outname is None:
         outname = os.path.splitext(fname)[0] + '.tif'
     vel, profile = read_h5(fname) 
@@ -70,7 +69,6 @@ def reproject_geotiff(input_filename, output_filename, src_epsg, dst_epsg, resam
       dst_epsg: EPSG code of the destination coordinate system.
       resampling: Resampling method to use during reprojection (default: nearest).
   """
-
   # Define source and destination CRS objects using pyproj
   dst_crs_obj = pyproj.CRS.from_epsg(dst_epsg)
 

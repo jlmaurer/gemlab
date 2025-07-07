@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Mon Jun 20 15:01:35 2022
 
 @author: duttar
 """
 
-import sys
-import os
 import argparse
-import numpy as np
-import h5py
 import glob
-import datetime
+import os
+import sys
+
+import numpy as np
 from osgeo import gdal
+
 
 def cmdLineParse():
     parser = argparse.ArgumentParser(description='Runs Fringe software to create multilooked timeseries.',\
@@ -52,7 +51,7 @@ EXAMPLE = """example:
 """
 
 def step1(fringefolder,stackfolder,S,N,W,E,stacksize):
-    '''
+    """
     In this step, creates bsub file to run fringe steps until Sequential.py 
 
     Parameters
@@ -72,11 +71,11 @@ def step1(fringefolder,stackfolder,S,N,W,E,stacksize):
     stacksize : TYPE
         DESCRIPTION.
 
-    Returns
+    Returns:
     -------
     None.
 
-    '''    
+    """    
     # copy the combine_SLCs script to the fringe folder
     cmdline1 = "cd "+ fringefolder + " && cp ~/softwares/InSAR_utils/isce_mst/combine_SLCs.py ."
     os.system(cmdline1)
@@ -112,7 +111,7 @@ def step1(fringefolder,stackfolder,S,N,W,E,stacksize):
     
 
 def step2(fringefolder,stacksize):
-    '''
+    """
     In this step, all fringe steps are run after Sequential.py 
 
     Parameters
@@ -122,11 +121,11 @@ def step2(fringefolder,stacksize):
     stacksize : TYPE
         DESCRIPTION.
 
-    Returns
+    Returns:
     -------
     None.
 
-    '''
+    """
     bsubfn = fringefolder + '/fringerun2.bsub' 
     bsub_file =  open(bsubfn, "w") 
     linetowrite1 = "#!/bin/bash\n#SBATCH --job-name=fringe2\n#SBATCH -N 1\n#SBATCH --ntasks=64\n"
@@ -159,14 +158,14 @@ def step2(fringefolder,stacksize):
     os.system(cmdline1)
     
 def step3(fringefolder,rlks,alks):
-    '''
+    """
     In this step, the wrapped timeseries is multilooked and unwrapped
 
-    Returns
+    Returns:
     -------
     None.
 
-    '''
+    """
     PSDSfolder = fringefolder + '/PS_DS' 
     
     # create a bsub file in PS_DS folder
@@ -219,14 +218,14 @@ def step3(fringefolder,rlks,alks):
     
 
 def radarGeometryTransformer(latfile, lonfile, epsg=4326):
-    '''
+    """
     Create a coordinate transformer to convert map coordinates to radar image line/pixels.
-    '''   
+    """   
     driver = gdal.GetDriverByName('VRT')
     inds = gdal.OpenShared(latfile, gdal.GA_ReadOnly)
     tempds = driver.Create('', inds.RasterXSize, inds.RasterYSize, 0)
     inds = None    
-    tempds.SetMetadata({'SRS' : 'EPSG:{0}'.format(epsg),
+    tempds.SetMetadata({'SRS' : f'EPSG:{epsg}',
                         'X_DATASET': lonfile,
                         'X_BAND' : '1',
                         'Y_DATASET': latfile,
@@ -247,18 +246,18 @@ def lonlat2pixeline(lonFile, latFile, lon, lat):
     return location
 
 def step4(fringefolder, stackfolder, rlks, alks,S,N,W,E):
-    '''
+    """
 
     Parameters
     ----------
     fringefolder : TYPE
         DESCRIPTION.
 
-    Returns
+    Returns:
     -------
     None.
 
-    '''
+    """
     # generate full reso geometry files and then multilook them in merged folder
     geomref_folder = stackfolder + '/merged/geom_reference'
     
