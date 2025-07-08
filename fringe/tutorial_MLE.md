@@ -28,10 +28,81 @@ In the fringe folder, run the commands below.
 ```bash
 
 tops2vrt.py -i ../merged/ -s coreg_stack -g geometry -c slcs -b 0 24710 56370 67680
+
 nmap.py -i coreg_stack/slcs_base.vrt -o KS2/nmap -c KS2/count -x 5 -y 5
+
 sequential.py -i ../merged/SLC -s 30 -o Sequential -w KS2/nmap -b coreg_stack/slcs_base.vrt -x 5 -y 5
 
 ```
+
+## An error you might run into
+
+* If getting the error `ERROR 4: coreg_stack/slcs_base.vrt: No such file or directory Cannot open stack file { coreg_stack/slcs_base.vrt } with GDAL for reading. GDALOpen failed - coreg_stack/slcs_base.vrt Exiting with error code .... (102)`. Change the line `coreg_stack/slcs_base.vrt` to whatever the full path name is, or if still not working, just find out what the bounding box coordinates related to the file are. In this case, they were the same as `nmap.py` file.  
+
+* If `nmaplib not found` error happens, make sure that either a direct path is set or activate_isce.sh was set. 
+
+* If either error appears: 
+```
+Traceback (most recent call last):
+
+File "/home/mrl83k/SEFStorage/Maryann/tools/fringe/src/fringe/src/sequential/sequential.py", line 168, in inps.bbox = tuple([int(i) for i in inps.bbox])
+
+File "/home/mrl83k/SEFStorage/Maryann/tools/fringe/src/fringe/src/sequential/sequential.py", line 168, in inps.bbox = tuple([int(i) for i in inps.bbox])
+
+ValueError: invalid literal for int() with base 10: '/home/mrl83k/SEFStorage/Maryann/tools/fringe/coreg_stack/slcs_base.vrt'
+```
+
+OR 
+```
+Number of SLCs discovered: 0 
+
+
+We assume that the SLCs and the ann files are sorted in the same order writing /mnt/stor/geob/jlmd9g/Maryann/tools/fringe/Sequential/Datum_connection/stack/stack.vrt
+
+Traceback (most recent call last): File "/home/mrl83k/SEFStorage/Maryann/tools/fringe/src/fringe/src/sequential/sequential.py", line 253, in compSlcStack.writeStackVRT()
+
+File "/mnt/stor/geob/jlmd9g/Maryann/tools/fringe/src/fringe/src/sequential/Stack.py", line 143, in writeStackVRT width, height, xmin, ymin, xsize, ysize = self.get_x_y_offsets(-1)
+
+File "/mnt/stor/geob/jlmd9g/Maryann/tools/fringe/src/fringe/src/sequential/Stack.py", line 161, in get_x_y_offsets slc = self.slcList[ind]
+
+IndexError: list index out of range
+```
+
+Unfortunately, for the above, the only solution that I found was to delete all the folders except for the installed ones and restart the entire first step again. It should work fine after.  
+
+
+* If this error appears: 
+```
+Number of uint32 bytes for mask: 8 
+
+Number of rows  = 45345 
+
+Number of cols  = 9557 
+
+Number of bands = 30 
+
+Length mismatch between input dataset and weight dataset  
+
+Exiting with error code ....(107) 
+
+Traceback (most recent call last): 
+
+  File "/home/mrl83k/SEFStorage/Maryann/tools/fringe/src/fringe/src/sequential/sequential.py", line 221, in <module> 
+
+    miniStack.writeStackVRT() 
+
+  File "/mnt/stor/geob/jlmd9g/Maryann/tools/fringe/src/fringe/src/sequential/Stack.py", line 104, in writeStackVRT 
+
+    width = ds.RasterXSize 
+
+AttributeError: 'NoneType' object has no attribute 'RasterXSize' 
+```
+
+This means that the x and y, aka the range and azimuth for the `nmap.py` and `sequential.py`, were not set directly. Go back and double-check those values.  
+
+ 
+
+
 
 <aside>
     
@@ -54,16 +125,25 @@ In the fringe folder, run the commands below.
 ```bash
 
 adjustMiniStacks.py -s slcs/ -m Sequential/miniStacks/ -d Sequential/Datum_connection/ -M 30 -o adjusted_wrapped_DS
+
 ampdispersion.py -i coreg_stack/slcs_base.vrt -o ampDispersion/ampdispersion -m ampDispersion/mean
 
+
 cd ampDispersion
+
 gdal2isce_xml.py -i ampdispersion
+
 gdal2isce_xml.py -i mean
+
+
 cd ..
 
 imageMath.py -e="a<0.4" --a=ampDispersion/ampdispersion  -o ampDispersion/ps_pixels -t byte
+
 integratePS.py -s coreg_stack/slcs_base.vrt -d adjusted_wrapped_DS/ -t Sequential/Datum_connection/EVD/tcorr.bin -p ampDispersion/ps_pixels -o PS_DS --unwrap_method snaphu
+
 unwrapStack.py -s slcs -m Sequential/miniStacks/ -d Sequential/Datum_connection/ -M 30 -u 'unwrap_fringe.py' --unw_method snaphu
+
 
 ```
 
