@@ -1,3 +1,6 @@
+from collections.abc import Callable
+from typing import Any
+
 import numpy as np
 
 
@@ -13,7 +16,7 @@ def inter_strain(sdot, D, x):
     return -0.5 * (sdot / np.pi) * (1 / D) / (1 + np.square(x / D))
 
 
-def plot_def(fun, sdot, D, scale):
+def plot_def(fun: Callable[[Any, Any, Any], Any], sdot, D, scale) -> None:
     import matplotlib.pyplot as plt
 
     x = np.linspace(-scale, scale, 101)

@@ -1,12 +1,12 @@
-import os
+from pathlib import Path
+from typing import Any
 
 import h5py
 import numpy as np
 import pyproj
-import rasterio
+import rasterio as rio
 from pyproj import CRS
-from rasterio import Affine, open
-from rasterio.warp import Resampling, calculate_default_transform, reproject
+from rasterio import warp as riow
 
 
 DEFAULT_DICT = {
@@ -17,7 +17,7 @@ DEFAULT_DICT = {
     'height': 6,
     'count': 1,
     'crs': CRS.from_epsg(4326),
-    'transform': Affine(30.0, 0.0, -105.0, 0.0, -30.0, 105.0),
+    'transform': rio.Affine(30.0, 0.0, -105.0, 0.0, -30.0, 105.0),
     'blockysize': 6,
     'tiled': False,
     'interleave': 'band',
@@ -25,8 +25,8 @@ DEFAULT_DICT = {
 }
 
 
-def read_h5(fname):
-    with h5py.File(fname, 'r') as f:
+def read_h5(path: Path) -> tuple[Any, dict[str, Any]]:
+    with h5py.File(path) as f:
         vel = f['velocity'][()]
         width = int(f.attrs['WIDTH'])
         hgt = int(f.attrs['FILE_LENGTH'])
@@ -44,22 +44,26 @@ def read_h5(fname):
     profile['height'] = hgt
     profile['crs'] = CRS.from_user_input(crs)
     profile['dtype'] = vel[0, 0].dtype
-    profile['transform'] = Affine(float(xstep), 0, xf, 0, float(ystep), yf)
+    profile['transform'] = rio.Affine(float(xstep), 0, xf, 0, float(ystep), yf)
 
     return vel, profile
 
 
-def write_gtiff(fname, outname=None):
+def write_gtiff(input_path: Path, output_path: Path | None = None) -> None:
     """Read an HDF5 velocity file and write the velocity out to a GeoTiff"""
-    if outname is None:
-        outname = os.path.splitext(fname)[0] + '.tif'
-    vel, profile = read_h5(fname)
-    ds = open(outname, 'w', **profile)
-    ds.write(vel, 1)
-    ds.close()
+    output_path = output_path or input_path.with_suffix('.tif')
+    vel, profile = read_h5(input_path)
+    with rio.open(output_path, 'w', **profile) as ds:
+        ds.write(vel, 1)
 
 
-def reproject_geotiff(input_filename, output_filename, src_epsg, dst_epsg, resampling=Resampling.nearest):
+def reproject_geotiff(
+    input_path: Path,
+    output_path: Path,
+    src_epsg: int,
+    dst_epsg: int,
+    resampling: riow.Resampling = riow.Resampling.nearest,
+) -> None:
     """
     Reprojects a GeoTIFF from one coordinate system to another.
 
@@ -74,21 +78,21 @@ def reproject_geotiff(input_filename, output_filename, src_epsg, dst_epsg, resam
     dst_crs_obj = pyproj.CRS.from_epsg(dst_epsg)
 
     # Open the source GeoTIFF
-    with open(input_filename) as src:
+    with rio.open(input_path) as src:
         # Get source data, transform, and CRS
-        data = src.read(1)
+        src.read(1)
         src_transform = src.transform
-        transform, width, height = calculate_default_transform(src.crs, dst_crs_obj, src.width, src.height, *src.bounds)
+        transform, width, height = riow.calculate_default_transform(src.crs, dst_crs_obj, src.width, src.height, *src.bounds)
 
         dst_profile = src.meta.copy()
         dst_profile.update({'crs': dst_crs_obj, 'transform': transform, 'width': width, 'height': height})
 
         # Perform reprojection using rasterio.warp.reproject
-        with open(output_filename, 'w', **dst_profile) as dst:
+        with rio.open(output_path, 'w', **dst_profile) as dst:
             for i in range(1, src.count + 1):
-                reproject(
-                    source=rasterio.band(src, i),
-                    destination=rasterio.band(dst, i),
+                riow.reproject(
+                    source=rio.band(src, i),
+                    destination=rio.band(dst, i),
                     src_transform=src_transform,
                     src_crs=src.crs,
                     dst_crs=dst_crs_obj,
@@ -96,16 +100,16 @@ def reproject_geotiff(input_filename, output_filename, src_epsg, dst_epsg, resam
                 )
 
 
-def single_band_to_rgb(input_filename, output_filename):
+def single_band_to_rgb(input_path: Path, output_path: Path) -> None:
     """
     Converts a single-band GeoTIFF to a 3-band grayscale RGB image.
 
     Args:
-        input_filename: Path to the single-band GeoTIFF file.
-        output_filename: Path to the output 3-band RGB GeoTIFF file.
+        input_path: Path to the single-band GeoTIFF file.
+        output_path: Path to the output 3-band RGB GeoTIFF file.
     """
     # Open the single-band GeoTIFF
-    with open(input_filename) as src:
+    with rio.open(input_path) as src:
         data = src.read(1)
         profile = src.meta.copy()
 
@@ -114,11 +118,12 @@ def single_band_to_rgb(input_filename, output_filename):
     profile['count'] = 3
 
     # Write the replicated data as a 3-band GeoTIFF
-    with open(output_filename, 'w', **profile) as dst:
+    with rio.open(output_path, 'w', **profile) as dst:
         dst.write(rgb_data)
 
 
 if __name__ == '__main__':
-    write_gtiff('velocity.h5', outname='velocity.tif')
-    reproject_geotiff('velocity.tif', 'velocity_geo.tif', '32615', '4326')
-    single_band_to_rgb('velocity_geo.tif', 'velocity_visual.tif')
+    cwd = Path.cwd()
+    write_gtiff(cwd / 'velocity.h5', cwd / 'velocity.tif')
+    reproject_geotiff(cwd / 'velocity.tif', cwd / 'velocity_geo.tif', 32615, 4326)
+    single_band_to_rgb(cwd / 'velocity_geo.tif', cwd / 'velocity_visual.tif')

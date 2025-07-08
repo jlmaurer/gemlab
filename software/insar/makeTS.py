@@ -5,11 +5,11 @@ import re
 
 import h5py
 import numpy as np
-import rasterio
+import rasterio as rio
 from osgeo import gdal
 
 
-def main(ifgList, refCenter=None, refSize=None):
+def main(ifgList, refCenter=None, refSize=None) -> None:
     """
     Read in a list of interferograms and create a time-series and velocity map.
     """
@@ -179,7 +179,7 @@ def convertRad2meters(vel, lam=0.056):
     return vel / (4 * np.pi / lam)
 
 
-def writeTS2HDF5(array, dates, vel, filename='ts.h5'):
+def writeTS2HDF5(array, dates, vel, filename='ts.h5') -> None:
     with h5py.File(filename, 'w') as f:
         f['ts'] = array
         f['dates'] = dates
@@ -207,7 +207,7 @@ def gdal_open(fname, returnProj=False, userNDV=None, band=None):
     if os.path.exists(fname + '.vrt'):
         fname = fname + '.vrt'
 
-    with rasterio.open(fname) as src:
+    with rio.open(fname) as src:
         profile = src.profile
 
         # For all bands
@@ -241,7 +241,7 @@ def gdal_open(fname, returnProj=False, userNDV=None, band=None):
         return data, profile
 
 
-def nodataToNan(inarr, listofvals):
+def nodataToNan(inarr, listofvals) -> None:
     """
     Setting values to nan as needed
     """

@@ -4,55 +4,38 @@ Created on Fri Mar 11 16:07:12 2022
 @author: duttar
 """
 
-# import numpy as np
 import argparse
 import os
+from pathlib import Path
+
+
+class Args(argparse.Namespace):
+    path: Path
 
 
 parser = argparse.ArgumentParser(
     description='goes to SLC folder in merged and creates .slc.full files from .slc.full.vrt files'
 )
-parser.add_argument('-p', '--path', type=str, metavar='', required=True, help='enter path to merged folder')
+parser.add_argument(
+    '-p',
+    '--path',
+    type=lambda s: Path(s).absolute(),
+    metavar='',
+    required=True,
+    help='enter path to merged folder',
+)
 
-args = parser.parse_args()
+args = parser.parse_args(namespace=Args())
 
-merged_dir = str(args.path)
-sys_comm1 = 'cd ' + merged_dir + ' && mkdir trash'
-os.system(sys_comm1)
+merged_dir = args.path
+os.system(f'cd {merged_dir}')
 
-trash_dir = merged_dir + '/trash'
-SLC_dir = merged_dir + '/SLC'
-filename = trash_dir + '/dates.txt'
+slc_dir = merged_dir / 'SLC'
 
-# get list of dates in SLC and put that in trash folder
-sys_comm2 = 'ls ' + SLC_dir + ' > ' + filename
-os.system(sys_comm2)
-
-# read the file dates.txt
-file = open(filename)
-
-Counter = 0
-# Reading from file
-Content = file.read()
-CoList = Content.split('\n')
-for i in CoList:
-    if i:
-        Counter += 1
-# Counter is the number of lines in the file
-file.close()
-
-file = open(filename)
-Lines = file.readlines()
-count = 0
-# Strips the newline character
-for line in Lines:
-    count += 1
-    print(f'Moving SLC {line.strip()}')
-    sys_comm3 = 'gdal_translate -of ENVI ' + line.strip() + '.slc.full.vrt ' + line.strip() + '.slc.full'
-    # print(sys_comm3)
-    sys_comm4 = 'cd ' + SLC_dir + '/' + line.strip() + '/ && '
-    # print(sys_comm4)
-    sys_comm5 = sys_comm4 + sys_comm3
-    print(sys_comm5)
-    os.system(sys_comm5)
-file.close()
+for path in slc_dir.glob('*'):
+    print(f'Moving SLC {path.name}')
+    sys_comm1 = f'cd {slc_dir / path.name} && '
+    sys_comm2 = f'gdal_translate -of ENVI {path.name}.slc.full.vrt {path.name}.slc.full'
+    sys_comm3 = sys_comm1 + sys_comm2
+    print(sys_comm3)
+    os.system(sys_comm3)
