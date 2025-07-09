@@ -35,7 +35,7 @@ sequential.py -i ../merged/SLC -s 30 -o Sequential -w KS2/nmap -b coreg_stack/sl
 
 ```
 
-## An error you might run into
+### An error you might run into
 
 * If getting the error `ERROR 4: coreg_stack/slcs_base.vrt: No such file or directory Cannot open stack file { coreg_stack/slcs_base.vrt } with GDAL for reading. GDALOpen failed - coreg_stack/slcs_base.vrt Exiting with error code .... (102)`. Change the line `coreg_stack/slcs_base.vrt` to whatever the full path name is, or if still not working, just find out what the bounding box coordinates related to the file are. In this case, they were the same as `nmap.py` file.  
 
@@ -106,7 +106,7 @@ This means that the x and y, aka the range and azimuth for the `nmap.py` and `se
 
 <aside>
     
-> 💡 [tops2vrt.py]
+> 💡 Hints for [tops2vrt.py]
 > 
 > If `-B lon/lat` failed, use `-b x/y` to replace it. 
 > 
@@ -149,9 +149,13 @@ unwrapStack.py -s slcs -m Sequential/miniStacks/ -d Sequential/Datum_connection/
 
 ## Step 3. Unwrapping the interferograms
 
-Go to the PS_DS folder and run the commands below. Remember to change the value of rangelooks (rlks, `-r`) and azimuthlooks (alks, `-a`). 
+You must create the geometry **before running Step 3**. While Step 3 may still run if you manually create the `multilook.py` file, Step 4 will not work unless the geometry is properly set up.
 
-Here we set rangelooks as 9 and azimuthlooks as 3 as an example.
+Make sure to run `make_geometry.py` inside the `geometry` folder.
+
+Then, navigate to the `PS_DS` folder and run the following commands. Be sure to set the rangelooks (`-r`) and azimuthlooks (`-a`) values according to your needs — and they must match the values you used in `make_geometry.py`.
+
+In the example below, we use rangelooks = 9 and azimuthlooks = 3 (i.e., `python make_geometry.py -r 9 -a 3`).
 
 
 ```bash
@@ -175,10 +179,14 @@ chmod +x run_unwrap.txt
 ./run_unwrap.txt
 
 ```
+### An error you might run into
 
-## Step 4. Generate mintpy folder
+* For the module not finding “_gdal” might have to do “conda install -c conda-forge openssl=3" 
 
-Check line 159, 313-318 in `prep_fringe_downloaded.py`. The value of rangelooks and azimuthlooks should be consistent with what you set before.
+
+## Step 4. Generate MintPy folder
+
+Check **line 159, 313-318** in `prep_fringe_downloaded.py`. The value of rangelooks and azimuthlooks should be consistent with what you set before.
 
 ```bash
 python prep_fringe_downsampled.py  -u './PS_DS/unwrap/*.unw' -c ./PS_DS/tcorr_ds_ps.bin -g ./geometry/multi_rlks9_alks3/ -m '../reference/IW*.xml' -b ../baselines -o ./mintpy
@@ -218,132 +226,4 @@ geocode.py maskTempCoh.h5 -l inputs/geometryRadar.h5 --lalo-step 0.000833334 0.0
 
 The finished folder structure should be similar to this: [folder structure](https://github.com/yichiehlee/gemlab/blob/tutorial_MLE.md/fringe/folder_structure.md)
 
----
-
-# Making Geometry
-
-## Step 1. Create  `shadowMask.vrt`, `incLocal.vrt`, and `los.vrt` file
-
-If we use `-b` to specify the region, we should manually adjust the geometry before **step3**. Take `-r 9 -a 3` as an example. 
-
-After **step 1**, the geometry folder should have three files (`hgt.vrt`, `lat.vrt`, `lon.vrt`). 
-
-Copy the format and create `shadowMask.vrt`, `incLocal.vrt`, and `los.vrt` manually (change the SourceFilename to `shadowMask.vrt`, `incLocal.vrt`, and `los.vrt`). Here is an example.
-
-The format of `los.vrt` file is slightly different because los has two bands, including incidenceAngle and azimuthAngle. Please be careful with the indentation and the band number.
-
-    - original file 3 (files): hgt.vrt, lat.vrt, lon.vrt
-        
-```bash
-#shadowMask.vrt File
-<VRTDataset rasterXSize="11750" rasterYSize="27450"> 
-    <VRTRasterBand dataType="Float64" band="1">
-      <SimpleSource>
-        <SourceFilename>/mnt/stor/geob/jlmd9g/YiChieh/Haiti/SenDT69/stack_Oct27/merged/geom_reference/shadowMask.rdr.full.vrt</SourceFilename>
-        <SourceBand>1</SourceBand>
-        <SourceProperties RasterXSize="67584" RasterYSize="27454" DataType="Float64"/>
-        <SrcRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
-        <DstRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
-      </SimpleSource>
-    </VRTRasterBand>
-</VRTDataset>
-```
-
-```bash
-#incLocal.vrt File
-<VRTDataset rasterXSize="11750" rasterYSize="27450">
-    <VRTRasterBand dataType="Float64" band="1">
-      <SimpleSource>
-        <SourceFilename>/mnt/stor/geob/jlmd9g/YiChieh/Haiti/SenDT69/stack_Oct27/merged/geom_reference/incLocal.rdr.full.vrt</SourceFilename>
-        <SourceBand>1</SourceBand>
-        <SourceProperties RasterXSize="67584" RasterYSize="27454" DataType="Float64"/>
-        <SrcRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
-        <DstRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
-      </SimpleSource>
-    </VRTRasterBand>
-</VRTDataset>
-```
-        
-```bash
-#los.vrt file
-#los has 2 bands, the incidenceAngle and azimuthAngle
-<VRTDataset rasterXSize="11750" rasterYSize="27450">
-    <VRTRasterBand dataType="Float64" band="1">
-      <SimpleSource>
-        <SourceFilename>/mnt/stor/geob/jlmd9g/YiChieh/Haiti/SenDT69/stack_Oct27/merged/geom_reference/los.rdr.full.vrt</SourceFilename>
-        <SourceBand>1</SourceBand>
-        <SourceProperties RasterXSize="67584" RasterYSize="27454" DataType="Float64"/>
-        <SrcRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
-        <DstRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
-      </SimpleSource>
-    </VRTRasterBand>
-    <VRTRasterBand dataType="Float64" band="2">
-      <SimpleSource>
-        <SourceFilename>/mnt/stor/geob/jlmd9g/YiChieh/Haiti/SenDT69/stack_Oct27/merged/geom_reference/los.rdr.full.vrt</SourceFilename>
-        <SourceBand>2</SourceBand>
-        <SourceProperties RasterXSize="67584" RasterYSize="27454" DataType="Float64"/>
-        <SrcRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
-        <DstRect xOff="0" yOff="0" xSize="11750" ySize="27450"/>
-      </SimpleSource>
-    </VRTRasterBand>
-</VRTDataset>
-```
-
-## Step 2. Making Geometry
-
-After running `make_geometry.py` there should be 30 files in the geometry folder and 24 files in the geometry/multi_rlks*_alks* folder.
-
-```python
-python make_geometry.py -r 9 -a 3
-```
-
-## Step 3. Create *.vrt file
-
-Go to the multi_rlks*_alks* folder and create `*.vrt` files.
-
-Copy the content from the original `*.vrt`, but change the SourceFilename to `incLocal_rlks9_alks3.rdr`.
-
-Do the same things to the other five files. After this step, should be 30 files in the multi_rlks*_alks* folder. Here is an example.
-
-```bash
-#Check the size of incLocal_rlks9_alks3.rdr and change line1, 6, 7, and 8. 
-#(line7&8) Make xOff&yOff as 0, xSize&ySize as same as the size of incLocal_rlks9_alks3.rdr.
-
-<VRTDataset rasterXSize="1305" rasterYSize="9150"> 
-    <VRTRasterBand dataType="Float64" band="1">
-      <SimpleSource>
-        <SourceFilename>incLocal_rlks9_alks3.rdr</SourceFilename>
-        <SourceBand>1</SourceBand>
-        <SourceProperties RasterXSize="1305" RasterYSize="9150" DataType="Float64"/>
-        <SrcRect xOff="0" yOff="0" xSize="1305" ySize="9150"/>
-        <DstRect xOff="0" yOff="0" xSize="1305" ySize="9150"/>
-      </SimpleSource>
-    </VRTRasterBand>
-</VRTDataset>
-```
-
-```bash
-<VRTDataset rasterXSize="1305" rasterYSize="9150"> 
-    <VRTRasterBand dataType="Float64" band="1">
-      <SimpleSource>
-        <SourceFilename>los_rlks10_alks6.rdr</SourceFilename>
-        <SourceBand>1</SourceBand>
-        <SourceProperties RasterXSize="1305" RasterYSize="9150" DataType="Float64"/>
-        <SrcRect xOff="0" yOff="0" xSize="1305" ySize="9150"/>
-        <DstRect xOff="0" yOff="0" xSize="1305" ySize="9150"/>
-      </SimpleSource>
-    </VRTRasterBand>
-    <VRTRasterBand dataType="Float64" band="2">
-      <SimpleSource>
-        <SourceFilename>los_rlks10_alks6.rdr</SourceFilename>
-        <SourceBand>2</SourceBand>
-        <SourceProperties RasterXSize="1305" RasterYSize="9150" DataType="Float64"/>
-        <SrcRect xOff="0" yOff="0" xSize="1305" ySize="9150"/>
-        <DstRect xOff="0" yOff="0" xSize="1305" ySize="9150"/>
-      </SimpleSource>
-    </VRTRasterBand>
-</VRTDataset>
-```
-
-**Done**
 
