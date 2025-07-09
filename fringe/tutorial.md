@@ -1,7 +1,10 @@
-# Fringe
----
+# FRInGE
 
-**Requirements:**
+FRInGE offers two processing modules: Maximum Likelihood Estimation (MLE) and Eigenvalue Decomposition (EVD). More details about each method can be found in the FRInGE [documentation](https://github.com/isce-framework/fringe/tree/main).
+
+When running FRInGE, the only difference between the two approaches is in **Step 1** and **Step 2**.
+
+## Requirements
 ```
 * combine_SLCs.py
 * prep_fringe_downsampled.py
@@ -11,7 +14,7 @@
 
 Create a fringe folder and activate the **ISCE2** environment first. 
 
-If ../merged/SLC/_date_/* folder only has two files ( `*.slc.full.vrt`, `*.slc.full.xml` ), we should combine SLC first.
+If `../merged/SLC/_date_/*` folder only has two files ( `*.slc.full.vrt`, `*.slc.full.xml` ), we should combine SLC first.
 
 ```bash
 
@@ -24,6 +27,7 @@ After this step, there should be five files in each date folder ( `*.slc.full`, 
 ## Step 1. 
 
 In the fringe folder, run the commands below.
+* MLE version
 
 ```bash
 
@@ -32,6 +36,19 @@ tops2vrt.py -i ../merged/ -s coreg_stack -g geometry -c slcs -b 0 24710 56370 67
 nmap.py -i coreg_stack/slcs_base.vrt -o KS2/nmap -c KS2/count -x 5 -y 5
 
 sequential.py -i ../merged/SLC -s 30 -o Sequential -w KS2/nmap -b coreg_stack/slcs_base.vrt -x 5 -y 5
+
+```
+OR
+
+* EVD version
+
+```bash
+
+tops2vrt.py -i ../merged/ -s coreg_stack -g geometry -c slcs -b 0 12230 0 68048
+
+nmap.py -i coreg_stack/slcs_base.vrt -o KS2/nmap -c KS2/count -x 11 -y 5
+
+evd.py -i coreg_stack/slcs_base.vrt -o Sequential -w KS2/nmap -x 11 -y 5 -m EVD
 
 ```
 
@@ -122,6 +139,8 @@ This means that the x and y, aka the range and azimuth for the `nmap.py` and `se
 
 In the fringe folder, run the commands below.
 
+* MLE version
+
 ```bash
 
 adjustMiniStacks.py -s slcs/ -m Sequential/miniStacks/ -d Sequential/Datum_connection/ -M 30 -o adjusted_wrapped_DS
@@ -144,7 +163,41 @@ integratePS.py -s coreg_stack/slcs_base.vrt -d adjusted_wrapped_DS/ -t Sequentia
 
 unwrapStack.py -s slcs -m Sequential/miniStacks/ -d Sequential/Datum_connection/ -M 30 -u 'unwrap_fringe.py' --unw_method snaphu
 
+```
+OR
 
+* EVD version
+
+```bash
+ampdispersion.py -i coreg_stack/slcs_base.vrt -o ampDispersion/ampdispersion -m ampDispersion/mean
+
+
+cd ampDispersion
+
+gdal2isce_xml.py -i ampdispersion
+
+gdal2isce_xml.py -i mean
+
+
+cd ..
+
+imageMath.py -e="a<0.4" --a=ampDispersion/ampdispersion  -o ampDispersion/ps_pixels -t byte
+
+
+cd Sequential
+
+ls *.slc > list_slc.txt
+
+awk '{print "gdal2isce_xml.py -i "$1}' list_slc.txt > run_vrt.txt
+
+chmod +x run_vrt.txt
+
+./run_vrt.txt
+
+
+cd ..
+
+integratePS.py -s coreg_stack/slcs_base.vrt -d Sequential/ -t Sequential/tcorr.bin -p ampDispersion/ps_pixels -o PS_DS --unwrap_method snaphu
 ```
 
 ## Step 3. Unwrapping the interferograms
@@ -161,21 +214,32 @@ In the example below, we use rangelooks = 9 and azimuthlooks = 3 (i.e., `python 
 ```bash
 
 rm *rlks9*alks3*int
+
 ls *int >  list_int.txt
+
+
 
 awk '{print "multilook.py "substr($1,1,17)".int -r 9 -a 3 -o "substr($1,1,17)"_rlks9_alks3.int"}' list_int.txt > multilook.txt
 
+
 chmod +x multilook.txt
+
 ./multilook.txt
 
+
 gdal2isce_xml.py -i tcorr_ds_ps.bin
+
 multilook.py  tcorr_ds_ps.bin -r 9 -a 3 -o tcorr_ds_ps_rlks9_alks3.bin
+
+
 
 ls *rlks9*alks3*int > multilook_int.txt
 
 awk '{print "unwrap_fringe.py -m snaphu -i "$1" -c tcorr_ds_ps_rlks9_alks3.bin -o unwrap/"substr($1,1,17)".unw"}' multilook_int.txt > run_unwrap.txt
 
 chmod +x run_unwrap.txt
+
+
 ./run_unwrap.txt
 
 ```
@@ -189,7 +253,9 @@ chmod +x run_unwrap.txt
 Check **line 159, 313-318** in `prep_fringe_downloaded.py`. The value of rangelooks and azimuthlooks should be consistent with what you set before.
 
 ```bash
+
 python prep_fringe_downsampled.py  -u './PS_DS/unwrap/*.unw' -c ./PS_DS/tcorr_ds_ps.bin -g ./geometry/multi_rlks9_alks3/ -m '../reference/IW*.xml' -b ../baselines -o ./mintpy
+
 ```
 
 ## Step 5. Step of mintpy
