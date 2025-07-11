@@ -7,6 +7,7 @@ import geopandas as gpd
 import numpy as np
 import rasterio as rio
 import rioxarray as riox
+from matplotlib import pyplot as plt
 from rasterio import mask as riom
 from rasterio import warp as rio_warp
 from rasterio import windows as rio_windows
