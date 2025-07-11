@@ -35,6 +35,7 @@ EXAMPLE = """example:
 """
 
 
+# Bounding box formatted South and North latitudes, then West and East longitudes
 type SNWE = tuple[float, float, float, float]
 
 
