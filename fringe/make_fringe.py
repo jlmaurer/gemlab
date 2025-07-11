@@ -29,7 +29,7 @@ INTRODUCTION = """
 EXAMPLE = """example:
 
   python make_fringe.py -sf /mnt/stor/geob/jlmd9g/Rishabh/northslope/Sentinel/Descending/DT73/stack -fn fringe_sub1 \
-    -bbox '70.56 71.43 -157.86 -151.95' -ssize 35 -sn 3 -rlks 12 -alks 3
+    -bbox '70.56 71.43 -157.86 -151.95' -ssize 35 -sn 3 -rlks 12 -alks 3 -e your@emailaddresshere.com
 
   ###################################################################################
 """
@@ -58,6 +58,7 @@ class Args(argparse.Namespace):
     stepnumber: int
     rangelooks: int
     azimuthlooks: int
+    email: str
 
 
 def cmd_line_parse(argv: Sequence[str]) -> Args:
@@ -125,12 +126,21 @@ def cmd_line_parse(argv: Sequence[str]) -> Args:
         required=True,
         help='multilook factor for SAR azimuth direction',
     )
+    parser.add_argument(
+        '-e',
+        '--email',
+        type=str,
+        metavar='',
+        required=False,
+        default='',
+        help='Email address to send Slurm job updates to',
+    )
 
     args = parser.parse_args(argv, namespace=Args())
     return args
 
 
-def step1(fringe_folder: Path, stack_folder: Path, bounding_box: SNWE, stack_size: int) -> None:
+def step1(fringe_folder: Path, stack_folder: Path, bounding_box: SNWE, stack_size: int, email: str) -> None:
     """
     Creates bsub file to run fringe steps until sequential.py.
     Must run in a Slurm environment, or otherwise have `sbatch` available.
@@ -149,7 +159,7 @@ def step1(fringe_folder: Path, stack_folder: Path, bounding_box: SNWE, stack_siz
                 '#SBATCH --ntasks=64',
                 '#SBATCH --time=12-02:00:00',
                 '#SBATCH --mail-type=begin,end,fail,requeue',
-                '#SBATCH --mail-user=yl3mz@mst.edu',
+                f'#SBATCH --mail-user={email}',
                 '#SBATCH --export=all',
                 '#SBATCH --out=Foundry-%j.out',
                 '#SBATCH --mem-per-cpu=4000',
@@ -167,7 +177,7 @@ def step1(fringe_folder: Path, stack_folder: Path, bounding_box: SNWE, stack_siz
     os.system(f'cd {fringe_folder} && sbatch fringerun1.bsub')
 
 
-def step2(fringe_folder: Path, stack_size: int) -> None:
+def step2(fringe_folder: Path, stack_size: int, email: str) -> None:
     """All fringe steps are run after sequential.py."""
     bsub_path = fringe_folder / 'fringerun2.bsub'
     with bsub_path.open('w') as bsub_file:
@@ -178,7 +188,7 @@ def step2(fringe_folder: Path, stack_size: int) -> None:
             '#SBATCH --ntasks=64',
             '#SBATCH --time=12-02:00:00',
             '#SBATCH --mail-type=begin,end,fail,requeue',
-            '#SBATCH --mail-user=yl3mz@mst.edu',
+            f'#SBATCH --mail-user={email}',
             '#SBATCH --export=all',
             '#SBATCH --out=Foundry-%j.out',
             '#SBATCH --mem-per-cpu=4000',
@@ -211,7 +221,7 @@ def step2(fringe_folder: Path, stack_size: int) -> None:
     os.system(f'cd {fringe_folder} && sbatch fringerun2.bsub')
 
 
-def step3(fringe_folder: Path, range_looks: int, azimuth_looks: int) -> None:
+def step3(fringe_folder: Path, range_looks: int, azimuth_looks: int, email: str) -> None:
     """The wrapped timeseries is multilooked and unwrapped."""
     ps_ds_folder = fringe_folder / 'PS_DS'
     bsub_path = ps_ds_folder / 'fringerun3.bsub'
@@ -223,7 +233,7 @@ def step3(fringe_folder: Path, range_looks: int, azimuth_looks: int) -> None:
             '#SBATCH --ntasks=64',
             '#SBATCH --time=6-02:00:00',
             '#SBATCH --mail-type=begin,end,fail,requeue',
-            '#SBATCH --mail-user=yl3mz@mst.edu',
+            f'#SBATCH --mail-user={email}',
             '#SBATCH --export=all',
             '#SBATCH --out=Foundry-%j.out',
             '#SBATCH --mem-per-cpu=4000',
@@ -294,7 +304,7 @@ def lonlat2pixeline(lon_path: Path, lat_path: Path, lon: float, lat: float):
     return location
 
 
-def step4(fringe_folder: Path, stack_folder: Path, range_looks: int, azimuth_looks: int, bounding_box: SNWE) -> None:
+def step4(fringe_folder: Path, stack_folder: Path, range_looks: int, azimuth_looks: int, bounding_box: SNWE, email: str) -> None:
     # generate full reso geometry files and then multilook them in merged folder
     geomref_folder = stack_folder / 'merged/geom_reference'
     bsub_path = geomref_folder / 'geomrun1.bsub'
@@ -307,7 +317,7 @@ def step4(fringe_folder: Path, stack_folder: Path, range_looks: int, azimuth_loo
                 '#SBATCH --ntasks=64',
                 '#SBATCH --time=6-02:00:00',
                 '#SBATCH --mail-type=begin,end,fail,requeue',
-                '#SBATCH --mail-user=yl3mz@mst.edu',
+                f'#SBATCH --mail-user={email}',
                 '#SBATCH --export=all',
                 '#SBATCH --out=Foundry-%j.out',
                 '#SBATCH --mem-per-cpu=4000',
@@ -443,17 +453,17 @@ def main(argv: list[str]) -> None:
         case 1:
             # in the fringe folder, run step1
             fringe_folder.mkdir(exist_ok=True)
-            step1(fringe_folder, args.stackfolder, args.boundingbox, args.stacksize)
+            step1(fringe_folder, args.stackfolder, args.boundingbox, args.stacksize, args.email)
             print('------step 1 finished------')
         case 2:
             # run step2
-            step2(fringe_folder, args.stacksize)
+            step2(fringe_folder, args.stacksize, args.email)
             print('------step 2 finished------')
         case 3:
-            step3(fringe_folder, args.rangelooks, args.azimuthlooks)
+            step3(fringe_folder, args.rangelooks, args.azimuthlooks, args.email)
             print('------step 3 finished------')
         case 4:
-            step4(fringe_folder, args.stackfolder, args.rangelooks, args.azimuthlooks, args.boundingbox)
+            step4(fringe_folder, args.stackfolder, args.rangelooks, args.azimuthlooks, args.boundingbox, args.email)
             print('------step 4 finished------')
 
 
