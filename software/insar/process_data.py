@@ -17,7 +17,7 @@ from tqdm import tqdm
 type WSEN = tuple[float, float, float, float]
 
 
-def run_resampling(shapefile_path: Path, data_dir: Path, out_dir: Path) -> None:
+def run_resampling(shapefile_path: Path, data_dir: Path = Path.cwd(), out_dir: Path = Path.cwd()) -> None:
     """Resamples a set of raster to ahve the same bounds"""
     amp_paths = data_dir.glob('**/*amp.tif')
     unw_paths = list(data_dir.glob('**/*unw_phase.tif'))

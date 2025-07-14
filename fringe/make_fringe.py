@@ -152,29 +152,27 @@ def step1(fringe_folder: Path, stack_folder: Path, bounding_box: SNWE, stack_siz
     merged_folder = stack_folder / 'merged'
     bsub_path = fringe_folder / 'fringerun1.bsub'
     with bsub_path.open('w') as bsub_file:
-        bsub_file.writelines(
-            [
-                '#!/bin/bash',
-                '#SBATCH --job-name=fringe1',
-                '#SBATCH -N 1',
-                '#SBATCH --ntasks=64',
-                '#SBATCH --time=12-02:00:00',
-                '#SBATCH --mail-type=begin,end,fail,requeue',
-                f'#SBATCH --mail-user={email}',
-                '#SBATCH --export=all',
-                '#SBATCH --out=Foundry-%j.out',
-                '#SBATCH --mem-per-cpu=4000',
-                '#SBATCH -p general',
-                f'python combine_SLCs.py -p {merged_folder}',
-                f'tops2vrt.py -i ../merged/ -s coreg_stack -g geometry -c slcs -B {bbox_serialize(bounding_box)}',
-                'nmap.py -i coreg_stack/slcs_base.vrt -o KS2/nmap -c KS2/count -x 11 -y 5',
-                (
-                    f'sequential.py -i ../merged/SLC -s {stack_size} -o Sequential -w KS2/nmap '
-                    '-b coreg_stack/slcs_base.vrt -x 11 -y 5'
-                ),
-                "echo 'job finished'",
-            ]
-        )
+        bsub_file.writelines([
+            '#!/bin/bash',
+            '#SBATCH --job-name=fringe1',
+            '#SBATCH -N 1',
+            '#SBATCH --ntasks=64',
+            '#SBATCH --time=12-02:00:00',
+            '#SBATCH --mail-type=begin,end,fail,requeue',
+            f'#SBATCH --mail-user={email}',
+            '#SBATCH --export=all',
+            '#SBATCH --out=Foundry-%j.out',
+            '#SBATCH --mem-per-cpu=4000',
+            '#SBATCH -p general',
+            f'python combine_SLCs.py -p {merged_folder}',
+            f'tops2vrt.py -i ../merged/ -s coreg_stack -g geometry -c slcs -B {bbox_serialize(bounding_box)}',
+            'nmap.py -i coreg_stack/slcs_base.vrt -o KS2/nmap -c KS2/count -x 11 -y 5',
+            (
+                f'sequential.py -i ../merged/SLC -s {stack_size} -o Sequential -w KS2/nmap '
+                '-b coreg_stack/slcs_base.vrt -x 11 -y 5'
+            ),
+            "echo 'job finished'",
+        ])
     os.system(f'cd {fringe_folder} && sbatch fringerun1.bsub')
 
 
@@ -310,33 +308,31 @@ def step4(fringe_folder: Path, stack_folder: Path, range_looks: int, azimuth_loo
     geomref_folder = stack_folder / 'merged/geom_reference'
     bsub_path = geomref_folder / 'geomrun1.bsub'
     with bsub_path.open('w') as bsub_file:
-        bsub_file.writelines(
-            [
-                '#!/bin/bash',
-                '#SBATCH --job-name=fringe4',
-                '#SBATCH -N 1',
-                '#SBATCH --ntasks=64',
-                '#SBATCH --time=6-02:00:00',
-                '#SBATCH --mail-type=begin,end,fail,requeue',
-                f'#SBATCH --mail-user={email}',
-                '#SBATCH --export=all',
-                '#SBATCH --out=Foundry-%j.out',
-                '#SBATCH --mem-per-cpu=4000',
-                '##SBATCH -p general',
-                'gdal_translate -of ENVI hgt.rdr.full.vrt hgt.rdr.full',
-                'gdal_translate -of ENVI lat.rdr.full.vrt lat.rdr.full',
-                'gdal_translate -of ENVI lon.rdr.full.vrt lon.rdr.full',
-                'gdal_translate -of ENVI los.rdr.full.vrt los.rdr.full',
-                'gdal_translate -of ENVI incLocal.rdr.full.vrt incLocal.rdr.full',
-                'gdal_translate -of ENVI shadowMask.rdr.full.vrt shadowMask.rdr.full',
-                f'multilook.py hgt.rdr.full -r {range_looks} -a {azimuth_looks} -o hgt_rlks{range_looks}_alks{azimuth_looks}.rdr',
-                f'multilook.py lon.rdr.full -r {range_looks} -a {azimuth_looks} -o lon_rlks{range_looks}_alks{azimuth_looks}.rdr',
-                f'multilook.py lat.rdr.full -r {range_looks} -a {azimuth_looks} -o lat_rlks{range_looks}_alks{azimuth_looks}.rdr',
-                f'multilook.py los.rdr.full -r {range_looks} -a {azimuth_looks} -o los_rlks{range_looks}_alks{azimuth_looks}.rdr',
-                f'multilook.py incLocal.rdr.full -r {range_looks} -a {azimuth_looks} -o incLocal_rlks{range_looks}_alks{azimuth_looks}.rdr',
-                f'multilook.py shadowMask.rdr.full -r {range_looks} -a {azimuth_looks} -o shadowMask_rlks{range_looks}_alks{azimuth_looks}.rdr',
-            ]
-        )
+        bsub_file.writelines([
+            '#!/bin/bash',
+            '#SBATCH --job-name=fringe4',
+            '#SBATCH -N 1',
+            '#SBATCH --ntasks=64',
+            '#SBATCH --time=6-02:00:00',
+            '#SBATCH --mail-type=begin,end,fail,requeue',
+            f'#SBATCH --mail-user={email}',
+            '#SBATCH --export=all',
+            '#SBATCH --out=Foundry-%j.out',
+            '#SBATCH --mem-per-cpu=4000',
+            '##SBATCH -p general',
+            'gdal_translate -of ENVI hgt.rdr.full.vrt hgt.rdr.full',
+            'gdal_translate -of ENVI lat.rdr.full.vrt lat.rdr.full',
+            'gdal_translate -of ENVI lon.rdr.full.vrt lon.rdr.full',
+            'gdal_translate -of ENVI los.rdr.full.vrt los.rdr.full',
+            'gdal_translate -of ENVI incLocal.rdr.full.vrt incLocal.rdr.full',
+            'gdal_translate -of ENVI shadowMask.rdr.full.vrt shadowMask.rdr.full',
+            f'multilook.py hgt.rdr.full -r {range_looks} -a {azimuth_looks} -o hgt_rlks{range_looks}_alks{azimuth_looks}.rdr',
+            f'multilook.py lon.rdr.full -r {range_looks} -a {azimuth_looks} -o lon_rlks{range_looks}_alks{azimuth_looks}.rdr',
+            f'multilook.py lat.rdr.full -r {range_looks} -a {azimuth_looks} -o lat_rlks{range_looks}_alks{azimuth_looks}.rdr',
+            f'multilook.py los.rdr.full -r {range_looks} -a {azimuth_looks} -o los_rlks{range_looks}_alks{azimuth_looks}.rdr',
+            f'multilook.py incLocal.rdr.full -r {range_looks} -a {azimuth_looks} -o incLocal_rlks{range_looks}_alks{azimuth_looks}.rdr',
+            f'multilook.py shadowMask.rdr.full -r {range_looks} -a {azimuth_looks} -o shadowMask_rlks{range_looks}_alks{azimuth_looks}.rdr',
+        ])
     os.system(f'cd {geomref_folder} && sbatch geomrun1.bsub')
 
     geom_fringe_folder_1 = fringe_folder / 'geometry'

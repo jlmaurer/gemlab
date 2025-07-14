@@ -437,10 +437,10 @@ def prepare_stack(
     print('number of interferograms:', num_paths)
 
     # get list of *.unw.conncomp file
-    cc_files = [path.with_suffix(path.suffix + '.conccomp') for path in unw_paths if path.is_file()]
-    print(f'number of connected components files: {len(cc_files)}')
+    cc_paths = [path.with_suffix(path.suffix + '.conccomp') for path in unw_paths if path.is_file()]
+    print(f'number of connected components files: {len(cc_paths)}')
 
-    if len(cc_files) != len(unw_paths):
+    if len(cc_paths) != len(unw_paths):
         print('The number of *.unw and *.unw.conncomp files are NOT consistent;')
         print('Skipping creating ifgramStack.h5 file.')
         return
@@ -490,7 +490,7 @@ def prepare_stack(
     print(f'writing data to HDF5 file {out_path} with a mode ...')
     with h5py.File(out_path, 'a') as fout:
         prog_bar = ptime.progressBar(maxValue=num_paths)
-        for i, (unw_paths, cc_file) in enumerate(zip(unw_paths, cc_files)):
+        for i, (unw_path, cc_path) in enumerate(zip(unw_paths, cc_paths)):
             # read/write *.unw file
             ds: gdal.Dataset | None = gdal.Open(unw_paths, gdal.GA_ReadOnly)
             assert ds is not None
