@@ -1,20 +1,19 @@
-import math
+
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any
 
 import geopandas as gpd
 import numpy as np
 import rasterio as rio
-import rioxarray as riox
-from matplotlib import pyplot as plt
 from rasterio import mask as riom
 from rasterio import warp as rio_warp
-from rasterio import windows as rio_windows
 from tqdm import tqdm
 
 
-type WSEN = tuple[float, float, float, float]
+# import math
+# import rioxarray as riox
+# from matplotlib import pyplot as plt
+# from rasterio import windows as rio_windows
 
 
 def run_resampling(shapefile_path: Path, data_dir: Path = Path.cwd(), out_dir: Path = Path.cwd()) -> None:
@@ -105,18 +104,18 @@ def run_resampling(shapefile_path: Path, data_dir: Path = Path.cwd(), out_dir: P
             print(f'Currently running file #{k} of {len(unw_paths)}.')
 
 
-def update_file(orig_path: Path | None, ref_path: Path) -> None:
-    if orig_path is None:
-        return
+# def update_file(orig_path: Path | None, ref_path: Path) -> None:
+#     if orig_path is None:
+#         return
 
-    src = riox.open_rasterio(orig_path)
-    ref = riox.open_rasterio(ref_path)
-    assert not isinstance(src, list)
-    assert not isinstance(ref, list)
-    if src.shape != ref.shape:
-        ds_out = src.interp_like(ref)
-        del src
-        ds_out.rio.to_raster(orig_path)
+#     src = riox.open_rasterio(orig_path)
+#     ref = riox.open_rasterio(ref_path)
+#     assert not isinstance(src, list)
+#     assert not isinstance(ref, list)
+#     if src.shape != ref.shape:
+#         ds_out = src.interp_like(ref)
+#         del src
+#         ds_out.rio.to_raster(orig_path)
 
 
 def find_matching_file(haystack: Iterable[Path], needle: Path) -> Path | None:
@@ -133,39 +132,39 @@ def find_matching_file(haystack: Iterable[Path], needle: Path) -> Path | None:
     return None
 
 
-def plot_extents(data_dir: Path) -> None:
-    unw_paths = data_dir.glob('*/*unw_phase.tif')
-    ns_bounds = []
-    for path in unw_paths:
-        with rio.open(path) as f:
-            ns_bounds.append(f.bounds[:2])
+# def plot_extents(data_dir: Path) -> None:
+#     unw_paths = data_dir.glob('*/*unw_phase.tif')
+#     ns_bounds = []
+#     for path in unw_paths:
+#         with rio.open(path) as f:
+#             ns_bounds.append(f.bounds[:2])
 
-    de = np.array(ns_bounds).mean(axis=0)
+#     de = np.array(ns_bounds).mean(axis=0)
 
-    for k, pair in enumerate(ns_bounds):
-        plt.plot([k, k], [pair[0] - de[0], pair[1] - de[1]], '-k')
-    plt.ylim([de[0] - 100, de[1] + 100])
+#     for k, pair in enumerate(ns_bounds):
+#         plt.plot([k, k], [pair[0] - de[0], pair[1] - de[1]], '-k')
+#     plt.ylim([de[0] - 100, de[1] + 100])
 
-    plt.savefig('Network_extents.png')
-    plt.close('all')
-
-
-def snap(window: rio_windows.Window) -> rio_windows.Window:
-    """Handle rasterio's floating point precision (sub pixel) windows"""
-    # Adding the offset differences to the dimensions will handle case where width/heights can 1 pixel too small
-    # after the offsets are shifted.
-    # This ensures pixel contains the bounds that were originally passed to rio_windows.from_bounds()
-    col_off, row_off = math.floor(window.col_off), math.floor(window.row_off)
-    col_diff, row_diff = window.col_off - col_off, window.row_off - row_off
-    width, height = math.ceil(window.width + col_diff), math.ceil(window.height + row_diff)
-
-    return rio_windows.Window(col_off=col_off, row_off=row_off, width=width, height=height)  # type: ignore
+#     plt.savefig('Network_extents.png')
+#     plt.close('all')
 
 
-def expand_extent(raster, extent_bbox: WSEN, fill_value: Any | None = None) -> tuple[Any, rio.Affine]:
-    window = snap(rio_windows.from_bounds(*extent_bbox, raster.transform))
-    data = raster.read(window=window, boundless=True, fill_value=fill_value)
-    return data, rio_windows.transform(window, raster.transform)
+# def snap(window: rio_windows.Window) -> rio_windows.Window:
+#     """Handle rasterio's floating point precision (sub pixel) windows"""
+#     # Adding the offset differences to the dimensions will handle case where width/heights can 1 pixel too small
+#     # after the offsets are shifted.
+#     # This ensures pixel contains the bounds that were originally passed to rio_windows.from_bounds()
+#     col_off, row_off = math.floor(window.col_off), math.floor(window.row_off)
+#     col_diff, row_diff = window.col_off - col_off, window.row_off - row_off
+#     width, height = math.ceil(window.width + col_diff), math.ceil(window.height + row_diff)
+
+#     return rio_windows.Window(col_off=col_off, row_off=row_off, width=width, height=height)  # type: ignore
+
+
+# def expand_extent(raster, extent_bbox: WSEN, fill_value: Any | None = None) -> tuple[Any, rio.Affine]:
+#     window = snap(rio_windows.from_bounds(*extent_bbox, raster.transform))
+#     data = raster.read(window=window, boundless=True, fill_value=fill_value)
+#     return data, rio_windows.transform(window, raster.transform)
 
 
 def save_raster_with_transform(
@@ -181,7 +180,7 @@ def save_raster_with_transform(
     num_bands: int = 1,
     dst_height: int | None = None,
     dst_width: int | None = None,
-    nodata_val: Any = 0.0,
+    ndv: float = 0.0,
 ) -> None:
     # get default file size
     if dst_height is None:
@@ -257,23 +256,23 @@ def transform_with_shapefile(
         return
 
 
-def tranform_all_files(shapefile_path: Path, in_dir: Path=Path.cwd(), out_dir: Path=Path.cwd()) -> None:
-    # get list of interferograms
-    unwrapped_file_paths = list(in_dir.glob('*/*unw_phase.tif'))
-    coh_paths = list(in_dir.glob('*/*corr.tif'))
+# def tranform_all_files(shapefile_path: Path, in_dir: Path=Path.cwd(), out_dir: Path=Path.cwd()) -> None:
+#     # get list of interferograms
+#     unwrapped_file_paths = list(in_dir.glob('*/*unw_phase.tif'))
+#     coh_paths = list(in_dir.glob('*/*corr.tif'))
 
-    # get the transform
-    shp = gpd.read_file(shapefile_path)
-    with rio.open(unwrapped_file_paths[0]) as r_int:
-        with rio.open(coh_paths[0]):
-            shp_proj = shp.to_crs(r_int.crs)
-            epsg = r_int.crs.to_epsg()
+#     # get the transform
+#     shp = gpd.read_file(shapefile_path)
+#     with rio.open(unwrapped_file_paths[0]) as r_int:
+#         with rio.open(coh_paths[0]):
+#             shp_proj = shp.to_crs(r_int.crs)
+#             crs = r_int.crs
 
-    # loop through all interferograms and coherence rasters, clip to area of interest
-    print('clipping files')
-    for i, path in enumerate(unwrapped_file_paths):
-        print(f'{i} out of {len(unwrapped_file_paths) - 1}')
-        transform_with_shapefile(path, coh_paths[i], proj=shp_proj, epsg)
+#     # loop through all interferograms and coherence rasters, clip to area of interest
+#     print('clipping files')
+#     for i, path in enumerate(unwrapped_file_paths):
+#         print(f'{i + 1} out of {len(unwrapped_file_paths)}')
+#         transform_with_shapefile(path, coh_paths[i], proj=shp_proj, crs=crs, out_dir=out_dir)
 
 
 if __name__ == '__main__':

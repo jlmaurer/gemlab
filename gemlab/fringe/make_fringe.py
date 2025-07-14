@@ -14,6 +14,8 @@ from pathlib import Path
 import numpy as np
 from osgeo import gdal
 
+import gemlab.types import SNWE
+
 
 INTRODUCTION = """
 ##################################################################################
@@ -33,10 +35,6 @@ EXAMPLE = """example:
 
   ###################################################################################
 """
-
-
-# Bounding box formatted South and North latitudes, then West and East longitudes
-type SNWE = tuple[float, float, float, float]
 
 
 def bbox_unserialize(text: str) -> SNWE:
