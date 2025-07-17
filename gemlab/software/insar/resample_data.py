@@ -1,6 +1,8 @@
-
+import argparse
+import concurrent.futures
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 
 import geopandas as gpd
 import numpy as np
@@ -16,25 +18,26 @@ from tqdm import tqdm
 # from rasterio import windows as rio_windows
 
 
-def run_resampling(shapefile_path: Path, data_dir: Path = Path.cwd(), out_dir: Path = Path.cwd()) -> None:
-    """Resamples a set of raster to ahve the same bounds"""
-    amp_paths = data_dir.glob('**/*amp.tif')
+def main(shapefile_path: Path, ref_file: int = 100, data_dir: Path = Path.cwd(), out_dir: Path = Path.cwd()) -> None:
+    """Resamples a set of raster to have the same bounds"""
     unw_paths = list(data_dir.glob('**/*unw_phase.tif'))
-    ph_paths = data_dir.glob('**/*wrapped_phase.tif')
-    cor_paths = data_dir.glob('**/*corr.tif')
-    dem_paths = data_dir.glob('**/*dem.tif')
-    lv_theta_paths = data_dir.glob('**/*lv_theta.tif')
-    lv_phi_paths = data_dir.glob('**/*lv_phi.tif')
-    inc_paths = data_dir.glob('**/*inc_map.tif')
-    inc_ell_paths = data_dir.glob('**/*inc_map_ell.tif')
-    mask_paths = data_dir.glob('**/*water_mask.tif')
-    vert_disp_paths = data_dir.glob('**/*vert_disp.tif')
-    los_disp_paths = data_dir.glob('**/*los_disp.tif')
-
-    REF_FILE = 100
+    path_groups: list[list[Path]] = [
+        unw_paths,
+        list(data_dir.glob('**/*amp.tif')),
+        list(data_dir.glob('**/*wrapped_phase.tif')),
+        list(data_dir.glob('**/*corr.tif')),
+        list(data_dir.glob('**/*dem.tif')),
+        list(data_dir.glob('**/*lv_theta.tif')),
+        list(data_dir.glob('**/*lv_phi.tif')),
+        list(data_dir.glob('**/*inc_map.tif')),
+        list(data_dir.glob('**/*inc_map_ell.tif')),
+        list(data_dir.glob('**/*water_mask.tif')),
+        list(data_dir.glob('**/*vert_disp.tif')),
+        list(data_dir.glob('**/*los_disp.tif')),
+    ]
 
     # Get basic info from the reference file
-    with rio.open(unw_paths[REF_FILE]) as r_int:
+    with rio.open(unw_paths[ref_file]) as r_int:
         r_int.crs.to_epsg()
         crs = r_int.crs
         xres = r_int.transform[0]
@@ -44,64 +47,37 @@ def run_resampling(shapefile_path: Path, data_dir: Path = Path.cwd(), out_dir: P
     shape = gpd.read_file(shapefile_path)
     if shape.crs != crs:
         shape = shape.to_crs(crs)
-    bounds = shape.total_bounds
+    w, s, e, n = shape.total_bounds
 
     # Create the transform and dimensions for the destination raster
-    dst_transform = rio.Affine(xres, 0.0, bounds[0], 0.0, yres, bounds[3])
-    dst_width = int((bounds[2] - bounds[0]) / xres)
-    dst_height = int((bounds[3] - bounds[1]) / -yres)
-    out_dict = {
+    dst_transform = rio.Affine(xres, 0.0, w, 0.0, yres, n)
+    dst_width = int((e - w) / xres)
+    dst_height = int((n - s) / -yres)
+    transform_kwargs = {
         'transform': dst_transform,
         'width': dst_width,
         'height': dst_height,
         'crs': crs,
-        'bounds': bounds,
+        'bounds': shape.total_bounds,
         'proj': shape,
         'out_dir': out_dir,
     }
 
-    # TODO: parallelize
-    for k, uf in tqdm(enumerate(unw_paths), total=len(unw_paths)):
-        af = find_matching_file(amp_paths, uf)
-        ph = find_matching_file(ph_paths, uf)
-        cf = find_matching_file(cor_paths, uf)
-        df = find_matching_file(dem_paths, uf)
-        lvf = find_matching_file(lv_theta_paths, uf)
-        lpf = find_matching_file(lv_phi_paths, uf)
-        incf = find_matching_file(inc_paths, uf)
-        ief = find_matching_file(inc_ell_paths, uf)
-        mf = find_matching_file(mask_paths, uf)
-        vf = find_matching_file(vert_disp_paths, uf)
-        lf = find_matching_file(los_disp_paths, uf)
-
-        assert af is not None
-        assert ph is not None
-        assert cf is not None
-        assert df is not None
-        assert lvf is not None
-        assert lpf is not None
-        assert incf is not None
-        assert ief is not None
-        assert mf is not None
-        assert vf is not None
-        assert lf is not None
-
-        # loop through all interferograms and coherence rasters, clip to area of interest
-        transform_with_shapefile(af, **out_dict)
-        transform_with_shapefile(uf, **out_dict)
-        transform_with_shapefile(ph, **out_dict)
-        transform_with_shapefile(cf, **out_dict)
-        transform_with_shapefile(df, **out_dict)
-        transform_with_shapefile(lvf, **out_dict)
-        transform_with_shapefile(lpf, **out_dict)
-        transform_with_shapefile(incf, **out_dict)
-        transform_with_shapefile(ief, **out_dict)
-        transform_with_shapefile(mf, **out_dict)
-        transform_with_shapefile(vf, **out_dict)
-        transform_with_shapefile(lf, **out_dict)
-
-        if k % 10 == 0:
-            print(f'Currently running file #{k} of {len(unw_paths)}.')
+    with (
+        tqdm(total=len(path_groups) * len(unw_paths)) as pbar,
+        concurrent.futures.ThreadPoolExecutor() as executor
+    ):
+        futures: list[concurrent.futures.Future] = []
+        for unw_path in unw_paths:
+            for path_group in path_groups:
+                futures.append(
+                    executor.submit(
+                        transform_from_group_with_shapefile,
+                        path_group, unw_path, transform_kwargs
+                    )
+                )
+        for _ in concurrent.futures.as_completed(futures):
+            pbar.update(1)
 
 
 # def update_file(orig_path: Path | None, ref_path: Path) -> None:
@@ -116,6 +92,16 @@ def run_resampling(shapefile_path: Path, data_dir: Path = Path.cwd(), out_dir: P
 #         ds_out = src.interp_like(ref)
 #         del src
 #         ds_out.rio.to_raster(orig_path)
+
+
+def transform_from_group_with_shapefile(
+    path_group: list[Path],
+    unw_path: Path,
+    transform_kwargs: dict[str, Any],
+) -> None:
+    path = find_matching_file(path_group, unw_path)
+    assert path is not None
+    transform_with_shapefile(path, **transform_kwargs)
 
 
 def find_matching_file(haystack: Iterable[Path], needle: Path) -> Path | None:
@@ -256,7 +242,7 @@ def transform_with_shapefile(
         return
 
 
-# def tranform_all_files(shapefile_path: Path, in_dir: Path=Path.cwd(), out_dir: Path=Path.cwd()) -> None:
+# def transform_all_files(shapefile_path: Path, in_dir: Path=Path.cwd(), out_dir: Path=Path.cwd()) -> None:
 #     # get list of interferograms
 #     unwrapped_file_paths = list(in_dir.glob('*/*unw_phase.tif'))
 #     coh_paths = list(in_dir.glob('*/*corr.tif'))
@@ -276,4 +262,10 @@ def transform_with_shapefile(
 
 
 if __name__ == '__main__':
-    run_resampling(shapefile_path=Path('my_shapefile.shp'), data_dir=Path.cwd(), out_dir=Path.cwd())
+    p = argparse.ArgumentParser()
+    p.add_argument('--shapefile-path', type=lambda s: Path(s).absolute())
+    p.add_argument('--ref-file', type=int, default=100)
+    p.add_argument('--data-dir', type=lambda s: Path(s).absolute(), default='')
+    p.add_argument('--out-dir', type=lambda s: Path(s).absolute(), default='')
+    args = p.parse_args()
+    main(**args.__dict__)
