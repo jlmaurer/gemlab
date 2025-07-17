@@ -8,7 +8,7 @@ import h5py
 import numpy as np
 from osgeo import gdal
 
-import gemlab.types import FloatArray1D, FloatArray2D, FloatArray3D
+from gemlab.types import FloatArray1D, FloatArray2D, FloatArray3D
 
 
 type TransformCoeffs = tuple[float, float, float, float, float, float]
@@ -16,7 +16,7 @@ type TransformCoeffs = tuple[float, float, float, float, float, float]
 
 def main(
     ifg_paths: list[Path],
-    ref_center: list[int] | None = None,
+    ref_center: tuple[int, int] | None = None,
     ref_size: int | None = None,
 ) -> None:
     """
@@ -117,11 +117,11 @@ def read_ifg(
     )
 
 
-def read_raster(
+def get_raster_metadata(
     path: Path,
     band_num: int | None = None,
 ) -> tuple[int, int, Any, str, TransformCoeffs, float, int]:
-    """Read a GDAL VRT file and return its attributes"""
+    """Get the attributes of a GDAL VRT file"""
     try:
         ds: gdal.Dataset | None = gdal.Open(str(path), gdal.GA_ReadOnly)
         if ds is None:
@@ -153,9 +153,17 @@ def read_raster(
     )
 
 
-# TODO(Nate Kean) only works if all given ifg's are the same resolution.
-# Do we know this will always be the case?
 def get_data(ifg_paths: list[Path], band_num: int) -> FloatArray3D:
+    """Read one band from a list of interferograms into a 3D array.
+    
+    axis 0: interferogram index
+    axis 1: band row index
+    axis 2: band column index
+
+    @pre: all interferograms must be the same shape/resolution. This is NOT
+          automatically the case with data received from ASF Data Search. Use
+          resample_data.py to fit interferograms to one shape.
+    """
     last = read_ifg(ifg_paths.pop(), band_num=band_num)
     ifgs: FloatArray3D = np.zeros((len(ifg_paths), *last.shape))
     ifgs[-1] = last
@@ -166,12 +174,13 @@ def get_data(ifg_paths: list[Path], band_num: int) -> FloatArray3D:
 
 def dereference(
     ifgs: FloatArray3D,
-    ref_center: list[int] | None = None,
+    ref_center: tuple[int, int] | None = None,
     ref_size: int | None = None,
 ) -> FloatArray3D:
+    """Normalize a set of interferogram rasters with respect to a reference region."""
     if ref_center is None:
         ifg_shape = ifgs.shape[1:]
-        ref_center = [d // 2 for d in ifg_shape]
+        ref_center = (ifg_shape[0] // 2, ifg_shape[1] // 2)
         print(
             f'Reference region is centered on {ref_center[0]}/{ref_center[1]}'
         )
@@ -186,10 +195,7 @@ def dereference(
         ref_center[1] + ref_size // 2,
     )
     for k in range(len(ifgs)):
-        # TODO(Nate Kean): the original line here didn't do anything.
-        # What did the author mean to do?
-        # array[k, ...] - np.nanmean(array[k, list(range(row1, row2)), list(range(col1, col2))])
-        ifgs[k] = np.nanmean(
+        ifgs[k] -= np.nanmean(
             ifgs[k, list(range(row1, row2)), list(range(col1, col2))]
         )
     return ifgs
@@ -200,42 +206,32 @@ def make_ts(g_matrix: FloatArray2D, ifgs: FloatArray3D) -> FloatArray3D:
     ifg_count = ifgs.shape[0]
     flat_array: FloatArray2D = ifgs.reshape((ifg_count, np.prod(ifg_shape)))
 
-    # TODO(Nate Kean): what is "that" and can we possibly give it a more
-    # descriptive name
-    # "out_array" too
-    that, res, rank, s = np.linalg.lstsq(g_matrix, flat_array, rcond=None)
+    d_hat, res, rank, s = np.linalg.lstsq(g_matrix, flat_array, rcond=None)
     ts_count = g_matrix.shape[-1]
-    out_array = that.reshape((ts_count, *ifg_shape))
-    return out_array
+    return d_hat.reshape((ts_count, *ifg_shape))
 
 
-def find_mean_vel(
-    ts_array: FloatArray3D,
-    year_fracs: FloatArray1D,
-) -> FloatArray2D:
+def find_mean_vel(ts_array: FloatArray3D, year_fracs: FloatArray1D) -> FloatArray2D:
     ts_shape = ts_array.shape[1:]
     ts_count = ts_array.shape[0]
-    flat_array = ts_array.reshape((ts_count, np.prod(ts_shape)))
+    flat_array: FloatArray2D = ts_array.reshape((ts_count, np.prod(ts_shape)))
 
-    MAGIC_NUMBER = 2
-    g_matrix = np.ones((ts_count, MAGIC_NUMBER))
+    NUM_VARIABLES = 2
+    g_matrix = np.ones((ts_count, NUM_VARIABLES))
     g_matrix[:, 1] = year_fracs - year_fracs[0]
 
-    that, res, rank, s = np.linalg.lstsq(g_matrix, flat_array, rcond=None)
-    ts_count = g_matrix.shape[-1]  # = MAGIC_NUMBER
-    out_vel = that.reshape((ts_count, *ts_shape))
-    result: FloatArray2D = out_vel[1, ...]
-    return result
+    d_hat, res, rank, s = np.linalg.lstsq(g_matrix, flat_array, rcond=None)
+    out_vel = d_hat.reshape((NUM_VARIABLES, *ts_shape))
+    return out_vel[1, ...]
 
 
-# TODO(Nate Kean): meters or millimeters?
 def radians_to_meters[Dims: tuple, NBits: np.typing.NBitBase](
     vel: np.ndarray[Dims, np.dtype[np.floating[NBits]]],
-    lam: float = 0.056,
+    wavelength_m: float = 0.056,
 ) -> np.ndarray[Dims, np.dtype[np.floating[NBits]]]:
-    """Convert radians to mm"""
+    """Convert radians to meters"""
     # type: ignore -- dividing by a scalar preserves dimensions
-    return vel / (4 * np.pi / lam)  # type: ignore
+    return vel / (4 * np.pi / wavelength_m)  # type: ignore
 
 
 def write_ts_to_hdf5(
@@ -248,7 +244,7 @@ def write_ts_to_hdf5(
         fout['ts'] = ts_array
         fout['dates'] = year_fracs
         fout['vel'] = vel
-    print(f'Finished writing {path} to disk')
+    print(f'Wrote {path} to disk')
 
 
 # def gdal_open(
