@@ -8,3 +8,5 @@ Output
 *.h5
 *.tif
 .vscode/
+zipped/
+asf_insar_data/
