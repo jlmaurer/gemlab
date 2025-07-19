@@ -1,7 +1,4 @@
-*.yaml
-*.yml
-*.txt
-*Store
+.DS_Store
 *checkpoint*
 Output
 *pycache*
