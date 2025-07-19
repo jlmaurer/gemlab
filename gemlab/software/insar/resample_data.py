@@ -11,6 +11,8 @@ from rasterio import mask as riom
 from rasterio import warp as rio_warp
 from tqdm import tqdm
 
+from gemlab.types import FloatArray2D
+
 
 # import math
 # import rioxarray as riox
@@ -18,26 +20,38 @@ from tqdm import tqdm
 # from rasterio import windows as rio_windows
 
 
-def main(shapefile_path: Path, ref_file: int = 100, data_dir: Path = Path.cwd(), out_dir: Path = Path.cwd()) -> None:
-    """Resamples a set of raster to have the same bounds"""
+def main(
+    shapefile_path: Path,
+    data_dir: Path = Path.cwd(),
+    *,
+    ref_file: Path | int,
+) -> None:
+    """Resamples a set of rasters to have the same bounds"""
     unw_paths = list(data_dir.glob('**/*unw_phase.tif'))
     path_groups: list[list[Path]] = [
-        unw_paths,
-        list(data_dir.glob('**/*amp.tif')),
-        list(data_dir.glob('**/*wrapped_phase.tif')),
-        list(data_dir.glob('**/*corr.tif')),
-        list(data_dir.glob('**/*dem.tif')),
-        list(data_dir.glob('**/*lv_theta.tif')),
-        list(data_dir.glob('**/*lv_phi.tif')),
-        list(data_dir.glob('**/*inc_map.tif')),
-        list(data_dir.glob('**/*inc_map_ell.tif')),
-        list(data_dir.glob('**/*water_mask.tif')),
-        list(data_dir.glob('**/*vert_disp.tif')),
-        list(data_dir.glob('**/*los_disp.tif')),
+        path_group
+        for path_group in (
+            unw_paths,
+            list(data_dir.glob('**/*amp.tif')),
+            list(data_dir.glob('**/*wrapped_phase.tif')),
+            list(data_dir.glob('**/*corr.tif')),
+            list(data_dir.glob('**/*dem.tif')),
+            list(data_dir.glob('**/*lv_theta.tif')),
+            list(data_dir.glob('**/*lv_phi.tif')),
+            list(data_dir.glob('**/*inc_map.tif')),
+            list(data_dir.glob('**/*inc_map_ell.tif')),
+            list(data_dir.glob('**/*water_mask.tif')),
+            list(data_dir.glob('**/*vert_disp.tif')),
+            list(data_dir.glob('**/*los_disp.tif')),
+        )
+        if len(path_group) > 0
     ]
 
+    if isinstance(ref_file, int):
+        ref_file = unw_paths[ref_file]
+
     # Get basic info from the reference file
-    with rio.open(unw_paths[ref_file]) as r_int:
+    with rio.open(ref_file) as r_int:
         r_int.crs.to_epsg()
         crs = r_int.crs
         xres = r_int.transform[0]
@@ -58,25 +72,21 @@ def main(shapefile_path: Path, ref_file: int = 100, data_dir: Path = Path.cwd(),
         'width': dst_width,
         'height': dst_height,
         'crs': crs,
-        'bounds': shape.total_bounds,
         'proj': shape,
-        'out_dir': out_dir,
     }
 
-    with (
-        tqdm(total=len(path_groups) * len(unw_paths)) as pbar,
-        concurrent.futures.ThreadPoolExecutor() as executor
-    ):
+    with tqdm(total=len(path_groups) * len(unw_paths)) as pbar, concurrent.futures.ThreadPoolExecutor() as executor:
         futures: list[concurrent.futures.Future] = []
         for unw_path in unw_paths:
             for path_group in path_groups:
                 futures.append(
-                    executor.submit(
-                        transform_from_group_with_shapefile,
-                        path_group, unw_path, transform_kwargs
-                    )
+                    executor.submit(transform_from_group_with_shapefile, path_group, unw_path, transform_kwargs)
                 )
-        for _ in concurrent.futures.as_completed(futures):
+        for future in concurrent.futures.as_completed(futures):
+            # Access the result, even though we don't use it, just to let any
+            # exception that occurred bubble up. Otherwise, it gets thrown away.
+            # https://stackoverflow.com/a/49323718
+            future.result()
             pbar.update(1)
 
 
@@ -99,9 +109,11 @@ def transform_from_group_with_shapefile(
     unw_path: Path,
     transform_kwargs: dict[str, Any],
 ) -> None:
-    path = find_matching_file(path_group, unw_path)
-    assert path is not None
-    transform_with_shapefile(path, **transform_kwargs)
+    raster_path = find_matching_file(path_group, unw_path)
+    assert raster_path is not None, (
+        f'Failed to find matching file for "{unw_path.name}" in group {[path.name for path in path_group]}'
+    )
+    transform_with_shapefile(raster_path, **transform_kwargs)
 
 
 def find_matching_file(haystack: Iterable[Path], needle: Path) -> Path | None:
@@ -154,7 +166,7 @@ def find_matching_file(haystack: Iterable[Path], needle: Path) -> Path | None:
 
 
 def save_raster_with_transform(
-    data: np.ndarray | rio.Band,
+    data: FloatArray2D | rio.Band,
     path: Path,
     src_transform: rio.Affine | None,
     dst_transform: rio.Affine | None,
@@ -174,14 +186,14 @@ def save_raster_with_transform(
 
     # data_new=np.reshape(data,(bands,data.shape[0],data.shape[1]))
     if src_crs != '':
-        try:
+        if isinstance(src_crs, str):
             src_crs = rio.CRS.from_proj4(src_crs)
-        except TypeError:
-            src_crs = src_crs
     elif epsg != '':
         src_crs = rio.CRS.from_epsg(epsg)
     else:
         src_crs = rio.CRS.from_epsg('4326')
+
+    path.parent.mkdir(parents=True, exist_ok=True)
 
     with rio.open(
         path,
@@ -214,7 +226,6 @@ def transform_with_shapefile(
     width: int | None,
     height: int | None,
     proj: gpd.GeoDataFrame,
-    out_dir: Path = Path.cwd(),
 ) -> None:
     """
     Function to transform a raster to match the bounds of a shapefile
@@ -229,7 +240,7 @@ def transform_with_shapefile(
         # Create the new file
         save_raster_with_transform(
             np.squeeze(int_mask),
-            out_dir / raster_path.with_name(raster_path.stem + '_int.tif'),
+            raster_path.with_name(raster_path.stem + '_int.tif'),
             src_transform,
             transform,
             src_crs=crs,
@@ -238,6 +249,7 @@ def transform_with_shapefile(
             dst_height=height,
         )
     except ValueError:
+        print(f'Warning: raster does not overlap; skipping: {raster_path}')
         # if the raster does not overlap, just skip it
         return
 

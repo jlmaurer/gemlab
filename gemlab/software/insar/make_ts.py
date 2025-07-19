@@ -25,8 +25,8 @@ def main(
     date_pairs, dates = get_dates(ifg_paths)
     year_fracs: FloatArray1D = np.array([get_year_frac(d) for d in dates])
     g_matrix = make_g_matrix(dates, date_pairs)
-    ifgs = get_data(ifg_paths, 1)
-    ifgs = dereference(ifgs, ref_center, ref_size)
+    ifgs = get_data(ifg_paths, band_num=1)
+    dereference(ifgs, ref_center=ref_center, ref_size=ref_size)
     ts_array = make_ts(g_matrix, ifgs)
     vel = find_mean_vel(ts_array, year_fracs)
     vel = radians_to_meters(vel)
@@ -36,6 +36,11 @@ def main(
 def get_dates(
     ifg_paths: list[Path],
 ) -> tuple[list[tuple[dt.date, dt.date]], list[dt.date]]:
+    """Read the dates from a list of interferogram filenames.
+    
+    Returns a list of date pairs parsed from the filenames, and a version of
+    the list with no duplicates.
+    """
     date_pairs: list[tuple[dt.date, dt.date]] = []
     unique_dates: list[dt.date] = []
 
@@ -63,8 +68,8 @@ def get_dates(
     return date_pairs, unique_dates
 
 
-# Seconds since Unix Epoch for a dt.date
 def timestamp(date: dt.date) -> float:
+    """Seconds since the Unix Epoch for a dt.date."""
     return time.mktime(date.timetuple())
 
 
@@ -92,7 +97,10 @@ def make_g_matrix(
     dates: list[dt.date],
     pairs: list[tuple[dt.date, dt.date]],
 ) -> FloatArray2D:
-    """Create a time-series G-matrix. "dates" should be sorted ascending."""
+    """Create a time-series G-matrix.
+    
+    @pre: dates must be sorted and in ascending order.
+    """
     g_matrix = np.zeros((len(pairs), len(dates)))
     for k, (d1, d2) in enumerate(pairs):
         index1 = dates == d1
@@ -104,6 +112,7 @@ def make_g_matrix(
 
 def read_ifg(
     ifg: Path,
+    *,
     band_num: int = 1,
     x_start: float = 0,
     y_start: float = 0,
@@ -119,6 +128,7 @@ def read_ifg(
 
 def get_raster_metadata(
     path: Path,
+    *,
     band_num: int | None = None,
 ) -> tuple[int, int, Any, str, TransformCoeffs, float, int]:
     """Get the attributes of a GDAL VRT file"""
@@ -153,7 +163,7 @@ def get_raster_metadata(
     )
 
 
-def get_data(ifg_paths: list[Path], band_num: int) -> FloatArray3D:
+def get_data(ifg_paths: list[Path], *, band_num: int) -> FloatArray3D:
     """Read one band from a list of interferograms into a 3D array.
     
     axis 0: interferogram index
@@ -174,10 +184,14 @@ def get_data(ifg_paths: list[Path], band_num: int) -> FloatArray3D:
 
 def dereference(
     ifgs: FloatArray3D,
+    *,
     ref_center: tuple[int, int] | None = None,
     ref_size: int | None = None,
-) -> FloatArray3D:
-    """Normalize a set of interferogram rasters with respect to a reference region."""
+) -> None:
+    """Normalize a set of interferogram rasters with respect to a reference region.
+    
+    Modifies the `ifgs` array in-place.
+    """
     if ref_center is None:
         ifg_shape = ifgs.shape[1:]
         ref_center = (ifg_shape[0] // 2, ifg_shape[1] // 2)
@@ -198,7 +212,6 @@ def dereference(
         ifgs[k] -= np.nanmean(
             ifgs[k, list(range(row1, row2)), list(range(col1, col2))]
         )
-    return ifgs
 
 
 def make_ts(g_matrix: FloatArray2D, ifgs: FloatArray3D) -> FloatArray3D:
@@ -225,12 +238,12 @@ def find_mean_vel(ts_array: FloatArray3D, year_fracs: FloatArray1D) -> FloatArra
     return out_vel[1, ...]
 
 
-def radians_to_meters[Dims: tuple, NBits: np.typing.NBitBase](
-    vel: np.ndarray[Dims, np.dtype[np.floating[NBits]]],
+def radians_to_meters[Shape: tuple](
+    vel: np.ndarray[Shape, np.dtype[np.number]],
+    *,
     wavelength_m: float = 0.056,
-) -> np.ndarray[Dims, np.dtype[np.floating[NBits]]]:
-    """Convert radians to meters"""
-    # type: ignore -- dividing by a scalar preserves dimensions
+) -> np.ndarray[Shape, np.dtype[np.floating]]:
+    # type: ignore -- division converts to float and dividing by a scalar preserves dimensions
     return vel / (4 * np.pi / wavelength_m)  # type: ignore
 
 
