@@ -22,3 +22,8 @@ type FloatArray3D = np.ndarray[tuple[int, int, int], np.dtype[np.floating]]
 
 # Any number of dimensions -- when ndim is not able to be known ahead of time
 type FloatArrayND = np.ndarray[tuple[int, ...], np.dtype[np.floating]]
+
+
+# https://gdal.org/en/stable/tutorials/geotransforms_tut.html#introduction-to-geotransforms
+# minx width rowrot miny colrot height
+type Transform = tuple[float, float, float, float, float, float]

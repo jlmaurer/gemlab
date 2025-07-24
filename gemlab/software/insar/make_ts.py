@@ -9,10 +9,7 @@ import h5py
 import numpy as np
 from osgeo import gdal
 
-from gemlab.types import FloatArray1D, FloatArray2D, FloatArray3D
-
-
-type TransformCoeffs = tuple[float, float, float, float, float, float]
+from gemlab.types import FloatArray1D, FloatArray2D, FloatArray3D, Transform
 
 
 def main(
@@ -128,7 +125,7 @@ def get_raster_metadata(
     path: Path,
     *,
     band_num: int | None = None,
-) -> tuple[int, int, Any, str, TransformCoeffs, float, int]:
+) -> tuple[int, int, Any, str, Transform, float, int]:
     """Get the attributes of a GDAL VRT file"""
     try:
         ds: gdal.Dataset | None = gdal.Open(str(path), gdal.GA_ReadOnly)
@@ -141,7 +138,7 @@ def get_raster_metadata(
     x_size: int = ds.RasterXSize
     y_size: int = ds.RasterYSize
     geo_proj: str = ds.GetProjection()
-    transform: TransformCoeffs = ds.GetGeoTransform()
+    transform: Transform = ds.GetGeoTransform()
 
     if x_size == 0:
         raise RuntimeError('raster X size is zero, cannot continue')
