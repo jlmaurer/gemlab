@@ -43,7 +43,7 @@ def get_dates(
     the list with no duplicates.
     """
     date_pairs: list[tuple[dt.date, dt.date]] = []
-    unique_dates: list[dt.date] = []
+    unique_dates: set[dt.date] = set()
 
     for path in ifg_paths:
         # Get the date/time range from the ifg filename
@@ -58,15 +58,11 @@ def get_dates(
         d1 = dt.datetime.strptime(re.sub(r'T\d{6}', '', ds1), '%Y%m%d').date()
         d2 = dt.datetime.strptime(re.sub(r'T\d{6}', '', ds2), '%Y%m%d').date()
 
-        if d1 not in unique_dates:
-            unique_dates.append(d1)
-        if d2 not in unique_dates:
-            unique_dates.append(d2)
+        unique_dates.add(d1)
+        unique_dates.add(d2)
         date_pairs.append((d1, d2))
 
-    unique_dates.sort()
-
-    return date_pairs, unique_dates
+    return date_pairs, sorted(unique_dates)
 
 
 def timestamp(date: dt.date) -> float:
