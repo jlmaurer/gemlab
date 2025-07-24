@@ -1,6 +1,7 @@
 import datetime as dt
 import re
 import time
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -22,9 +23,9 @@ def main(
     """
     Read in a list of interferograms and create a time-series and velocity map.
     """
-    date_pairs, dates = get_dates(ifg_paths)
-    year_fracs: FloatArray1D = np.array([get_year_frac(d) for d in dates])
-    g_matrix = make_g_matrix(dates, date_pairs)
+    date_pairs, unique_dates = get_dates(ifg_paths)
+    year_fracs: FloatArray1D = np.array([get_year_frac(d) for d in unique_dates])
+    g_matrix = make_g_matrix(date_pairs, unique_dates)
     ifgs = get_data(ifg_paths, band_num=1)
     dereference(ifgs, ref_center=ref_center, ref_size=ref_size)
     ts_array = make_ts(g_matrix, ifgs)
@@ -94,17 +95,18 @@ def get_year_frac(date: dt.date) -> float:
 
 
 def make_g_matrix(
-    dates: list[dt.date],
-    pairs: list[tuple[dt.date, dt.date]],
+    date_pairs: Sequence[tuple[dt.date, dt.date]],
+    unique_dates: Sequence[dt.date],
 ) -> FloatArray2D:
     """Create a time-series G-matrix.
     
-    @pre: dates must be sorted and in ascending order.
+    @pre: unique_dates must be sorted and in ascending order.
     """
-    g_matrix = np.zeros((len(pairs), len(dates)))
-    for k, (d1, d2) in enumerate(pairs):
-        index1 = dates == d1
-        index2 = dates == d2
+    dates_arr = np.array(unique_dates)
+    g_matrix = np.zeros((len(date_pairs), len(dates_arr)))
+    for k, (d1, d2) in enumerate(date_pairs):
+        index1 = dates_arr == d1
+        index2 = dates_arr == d2
         g_matrix[k, index1] = -1
         g_matrix[k, index2] = 1
     return g_matrix
