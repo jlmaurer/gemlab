@@ -225,7 +225,8 @@ def make_ts(g_matrix: FloatArray2D, ifgs: FloatArray3D) -> FloatArray3D:
 
     d_hat, res, rank, s = np.linalg.lstsq(g_matrix, flat_array, rcond=None)
     ts_count = g_matrix.shape[-1]
-    return d_hat.reshape((ts_count, *ifg_shape))
+    ts = d_hat.reshape((ts_count, *ifg_shape))
+    return ts
 
 
 def find_mean_vel(ts_array: FloatArray3D, year_fracs: FloatArray1D) -> FloatArray2D:
@@ -238,8 +239,8 @@ def find_mean_vel(ts_array: FloatArray3D, year_fracs: FloatArray1D) -> FloatArra
     g_matrix[:, 1] = year_fracs - year_fracs[0]
 
     d_hat, res, rank, s = np.linalg.lstsq(g_matrix, flat_array, rcond=None)
-    out_vel = d_hat.reshape((NUM_VARIABLES, *ts_shape))
-    return out_vel[1, ...]
+    vel = d_hat.reshape((NUM_VARIABLES, *ts_shape))
+    return vel[1, ...]
 
 
 def radians_to_meters(vel: np.ndarray, *, wavelength_m: float = 0.056) -> None:
