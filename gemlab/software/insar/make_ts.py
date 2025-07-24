@@ -170,6 +170,7 @@ def get_data(ifg_paths: list[Path], *, band_num: int) -> FloatArray3D:
           resample_data.py to fit interferograms to one shape.
     """
     last = read_ifg(ifg_paths.pop(), band_num=band_num)
+    # Read one outside of the loop in order to calculate the output array's size
     ifgs: FloatArray3D = np.zeros((len(ifg_paths), *last.shape))
     ifgs[-1] = last
     for k, ifg in enumerate(ifg_paths):
@@ -185,19 +186,27 @@ def dereference(
 ) -> None:
     """Normalize a set of interferogram rasters with respect to a reference region.
     
+    Offsets the values of each interferogram downward to set "0" as relative
+    to a reference region, the expectation being the region you pick be one
+    where you know no deformation has occurred.
+
+    (0, 0) is the top-left/north-west corner of the rasters.  
+    +X is right/east, Y+ is down/south.
+
     Modifies the `ifgs` array in-place.
     """
     if ref_center is None:
         ifg_shape = ifgs.shape[1:]
         ref_center = (ifg_shape[0] // 2, ifg_shape[1] // 2)
         print(
-            f'Reference region is centered on {ref_center[0]}/{ref_center[1]}'
+            'No reference region center provided; '
+            f'defaulting to the center of the image: {ref_center[0]}/{ref_center[1]}'
         )
     if ref_size is None:
         ref_size = 10
-        print(f'Reference region is {ref_size**2} square pixels')
+        print(f'No reference region size provided; defaulting to {ref_size} sq. pixels')
 
-    row1, row2, col1, col2 = (
+    s, n, w, e = (
         ref_center[0] - ref_size // 2,
         ref_center[0] + ref_size // 2,
         ref_center[1] - ref_size // 2,

@@ -26,7 +26,7 @@ def main(
     *,
     ref_file: Path | int,
 ) -> None:
-    """Resamples a set of rasters to have the same bounds"""
+    """Copy and resample a set of rasters to have the same bounds"""
     unw_paths = list(data_dir.glob('**/*unw_phase.tif'))
     path_groups: list[list[Path]] = [
         path_group
@@ -51,11 +51,11 @@ def main(
         ref_file = unw_paths[ref_file]
 
     # Get basic info from the reference file
-    with rio.open(ref_file) as r_int:
-        r_int.crs.to_epsg()
-        crs = r_int.crs
-        xres = r_int.transform[0]
-        yres = r_int.transform[4]
+    with rio.open(ref_file) as src:
+        crs: rio.CRS = src.crs
+        transform: rio.Affine = src.transform
+        xres = transform[0]
+        yres = transform[4]
 
     # get the transform
     shape = gpd.read_file(shapefile_path)
