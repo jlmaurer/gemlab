@@ -1,0 +1,33 @@
+name: gemlab
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python>=3.10
+  # development
+  - pip
+  - ruff
+  # notebooks
+  - jupyter_contrib_nbextensions
+  - jupyterlab
+  # runtime
+  - asf_search
+  - dateparser
+  - gdal
+  - geopandas
+  - h5py
+  - hyp3_sdk
+  - matplotlib
+  - mintpy
+  - numpy
+  - pandas
+  - pyproj>=2.2.0
+  - raider
+  - rasterio>=1.3.0
+  - requests
+  - rioxarray
+  - scipy
+  - shapely
+  - tenacity
+  - tqdm
+  - xarray
