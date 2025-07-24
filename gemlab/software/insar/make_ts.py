@@ -29,7 +29,7 @@ def main(
     dereference(ifgs, ref_center=ref_center, ref_size=ref_size)
     ts_array = make_ts(g_matrix, ifgs)
     vel = find_mean_vel(ts_array, year_fracs)
-    vel = radians_to_meters(vel)
+    radians_to_meters(vel)
     write_ts_to_hdf5(ts_array, year_fracs, vel, Path.cwd())
 
 
@@ -238,13 +238,9 @@ def find_mean_vel(ts_array: FloatArray3D, year_fracs: FloatArray1D) -> FloatArra
     return out_vel[1, ...]
 
 
-def radians_to_meters[Shape: tuple](
-    vel: np.ndarray[Shape, np.dtype[np.number]],
-    *,
-    wavelength_m: float = 0.056,
-) -> np.ndarray[Shape, np.dtype[np.floating]]:
-    # type: ignore -- division converts to float and dividing by a scalar preserves dimensions
-    return vel / (4 * np.pi / wavelength_m)  # type: ignore
+def radians_to_meters(vel: np.ndarray, *, wavelength_m: float = 0.056) -> None:
+    """Modifies in place"""
+    vel /= (4 * np.pi / wavelength_m)
 
 
 def write_ts_to_hdf5(
