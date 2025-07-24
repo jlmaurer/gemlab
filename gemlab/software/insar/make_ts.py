@@ -169,11 +169,12 @@ def get_data(ifg_paths: list[Path], *, band_num: int) -> FloatArray3D:
           automatically the case with data received from ASF Data Search. Use
           resample_data.py to fit interferograms to one shape.
     """
-    last = read_ifg(ifg_paths.pop(), band_num=band_num)
     # Read one outside of the loop in order to calculate the output array's size
+    remaining = ifg_paths.copy()
+    last = read_ifg(remaining.pop(), band_num=band_num)
     ifgs: FloatArray3D = np.zeros((len(ifg_paths), *last.shape))
     ifgs[-1] = last
-    for k, ifg in enumerate(ifg_paths):
+    for k, ifg in enumerate(remaining):
         ifgs[k] = read_ifg(ifg, band_num=band_num)
     return ifgs
 
