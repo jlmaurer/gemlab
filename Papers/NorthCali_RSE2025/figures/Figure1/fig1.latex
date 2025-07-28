@@ -1,0 +1,142 @@
+\begin{figure}
+\centering
+\begin{tikzpicture}[node distance =1.5cm]
+\node[draw,
+    rectangle, 
+    minimum width =2cm,
+    minimum height = 1cm,
+    text width = 3cm, 
+    text centered] (slc1) {Level-1 SLC images};
+
+\node[draw,
+    rectangle, 
+    below of=slc1,
+    minimum width =2cm,
+    minimum height = 1cm,
+    text width = 3cm, 
+    text centered,
+    yshift=-1cm] (slc2) {Coregistered stack of SLC images};
+
+\node[draw,
+    trapezium, 
+    below left=of slc2,
+    trapezium left angle=70,
+    trapezium right angle=110,
+    minimum width =2cm,
+    minimum height = 1cm,
+    text width = 2.5cm,
+    text centered,
+    xshift=.6cm,
+    yshift=.5cm,
+    fill=black!10] (fringe1) {Find SHPs and run Phase Linking on DS pixels};
+
+\node[draw,
+    rectangle,
+    below of=fringe1,
+    minimum width =2cm,
+    minimum height = 1cm,
+    text width = 3cm, 
+    text centered,
+    yshift=-1cm] (fringe3) {Wrapped timeseries of DS pixels};
+
+
+\node[draw,
+    trapezium, 
+    below right=of slc2,
+    trapezium left angle=70,
+    trapezium right angle=110,
+    minimum width =2cm,
+    minimum height = 1cm,
+    text width = 2.5cm,
+    text centered,
+    xshift=-.6cm,
+    yshift=.5cm,
+    fill=black!10] (fringe2) {Detect PS pixels through amplitude dispersion};
+
+\node[draw,
+    rectangle,
+    below of=fringe2,
+    minimum width =2cm,
+    minimum height = 1cm,
+    text width = 3cm, 
+    text centered,
+    yshift=-1cm] (fringe4) {Wrapped timeseries of PS pixels};
+
+\node[draw,
+    trapezium, 
+    below of= slc2,
+    trapezium left angle=70,
+    trapezium right angle=110,
+    minimum width =8cm,
+    minimum height = 1cm,
+    text width = 8cm,
+    text centered,
+    yshift=-6cm,
+    fill=black!10] (fringe5) {Combine wrapped PS+DS timeseries and get temporal coherence};
+
+\node[draw,
+    trapezium, 
+    below of= fringe5,
+    trapezium left angle=70,
+    trapezium right angle=110,
+    minimum width =8cm,
+    minimum height = 1cm,
+    text width = 8cm,
+    text centered,
+    yshift=-.2cm,
+    fill=black!10] (fringe6) {downsampling and 2D phase unwrapping of PS+DS timeseries};
+
+\node[draw,
+    rectangle,
+    below left=of fringe6,
+    minimum width =4cm,
+    minimum height = 1cm,
+    text width = 4cm, 
+    text centered,
+    xshift=.9cm] (fringe7) {Unwrapped PS+DS timeseries and temporal coherence mask};
+
+\node[draw,
+    rectangle,
+    below right=of fringe6,
+    minimum width =4cm,
+    minimum height = 1cm,
+    text width = 4cm, 
+    text centered,
+    xshift=-.6cm,
+    yshift=-.01cm] (fringe8) {Corrected PS+DS timeseries and velocity};
+
+    
+%\node[draw,
+%    trapezium, 
+%    right of= slc1,
+%    trapezium left angle=70,
+%    trapezium right angle=110,
+%    minimum width =2cm,
+%    minimum height = 1cm,
+%    text centered,
+%    xshift=2.5cm] (slc3) {Dummy};
+
+\draw[-latex] (slc1) edge node[pos=0.5,fill=white,inner sep=2pt]{ISCE2}(slc2);
+
+%\draw[-latex] (slc2) -| (fringe1);
+\draw[-latex] (slc2) -| node[pos=0.5,fill=white,inner sep=2pt, text width=3cm,text badly centered]{FRInGE (DS workflow)}(fringe1);
+
+\draw[-latex] (slc2)  -| node[pos=0.5,fill=white,inner sep=2pt, text width=3cm,text badly centered]{FRInGE (PS workflow)}(fringe2);
+
+\draw[-latex] (fringe1) edge (fringe3)
+            (fringe2) edge (fringe4);
+
+\draw[-latex] (fringe3) -| (fringe5);
+\draw[-latex] (fringe4) -| (fringe5);
+
+\draw[-latex] (fringe5) edge (fringe6);
+
+\draw[-latex] (fringe6) edge node[pos=0.5,fill=white,inner sep=2pt]{MintPy}(fringe7);
+
+\draw[-latex] (fringe7) edge node[pos=0.5,fill=white,inner sep=2pt]{MintPy}(fringe8);
+
+\end{tikzpicture}
+
+\caption{Algorithm Flowchart for the PS+DS InSAR timeseries estimation}
+\label{fig:algorithm-flowchart}
+\end{figure}
