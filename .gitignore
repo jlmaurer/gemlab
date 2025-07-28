@@ -7,3 +7,10 @@ Output
 *pycache*
 *.h5
 *.tif
+*.csv
+*.mat
+*.png
+*.pdf
+*.eps
+*.ps
+
