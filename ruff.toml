@@ -1,0 +1,23 @@
+line-length = 120
+src = ["tools", "test"]
+
+[format]
+indent-style = "space"
+quote-style = "single"
+
+[lint]
+extend-select = [
+    "I",      # isort: https://docs.astral.sh/ruff/rules/#isort-i
+    "UP",     # pyupgrade: https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "ANN",    # annotations: https://docs.astral.sh/ruff/rules/#flake8-annotations-ann
+    "PTH",    # use-pathlib-pth: https://docs.astral.sh/ruff/rules/#flake8-use-pathlib-pth
+    "NPY201"  # https://docs.astral.sh/ruff/rules/numpy2-deprecation/#numpy2-deprecation-npy201
+]
+ignore = ["D200", "D205", "D212"]
+
+[lint.pydocstyle]
+convention = "google"
+
+[lint.isort]
+case-sensitive = true
+lines-after-imports = 2
