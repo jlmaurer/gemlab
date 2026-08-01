@@ -30,17 +30,26 @@ def read_h5(fname):
     with h5py.File(fname, 'r') as f:
         vel = f['velocity'][()]
         width = int(f.attrs['WIDTH'])
-        hgt = int(f.attrs['FILE_LENGTH'])
+        try:
+           hgt = int(f.attrs['FILE_LENGTH'])
+        except:
+           hgt = int(f.attrs['LENGTH'])
         R = f.attrs['EARTH_RADIUS']
-        crs = f.attrs['EPSG']
         ndv = f.attrs['NO_DATA_VALUE']
         xstep = f.attrs['X_STEP']
         ystep = f.attrs['Y_STEP']        
         xf = float(f.attrs['X_FIRST'])
         yf = float(f.attrs['Y_FIRST'])
+        try:
+            crs = f.attrs['EPSG']
+        except:
+            crs = CRS.from_epsg(4326)
 
     profile = DEFAULT_DICT
-    profile['nodata'] = float(ndv)
+    try:
+       profile['nodata'] = float(ndv)
+    except:
+       profile['nodata'] = -9999
     profile['width'] = width
     profile['height'] = hgt
     profile['crs'] = CRS.from_user_input(crs)
