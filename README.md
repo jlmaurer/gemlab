@@ -1,4 +1,4 @@
-[](https://doi.org/10.5281/zenodo.21745464) 
+[![DOI](https://shields.io)](https://doi.org/10.5281/zenodo.21745464)
 
 # GEMLab: The Geodesy and Earth Mechanics Lab at Missouri S&T
 This repository contains open-source codes and links to other repositories used by my research group at Missouri S&T, as well as a list of recent publications out of my group. 
