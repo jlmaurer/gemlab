@@ -10,3 +10,5 @@ Output
 *.zip
 *.csv
 *.nc
+software/viscoPyCD/
+
